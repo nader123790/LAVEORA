@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1040920797746",
+    "project_id": "harafy-app-f693e",
+    "storage_bucket": "harafy-app-f693e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1040920797746:android:c71edcb825d0c763f3d22b",
+        "android_client_info": {
+          "package_name": "com.example.harafyapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMypIcMsVVz5gLCkE3YmEhRDEzmVX12Xk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1040920797746:android:2466ed6153b87b07f3d22b",
+        "android_client_info": {
+          "package_name": "com.example.laveora_cafe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMypIcMsVVz5gLCkE3YmEhRDEzmVX12Xk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
