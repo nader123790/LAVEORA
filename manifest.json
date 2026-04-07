@@ -1,6 +1,6 @@
 {
-    "name": "laveora",
-    "short_name": "laveora",
+    "name": "laveora_cafe",
+    "short_name": "laveora_cafe",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
