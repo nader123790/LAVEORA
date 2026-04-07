@@ -33,3 +33,10 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon.png"
+
+  assets:
+    - assets/images/laveora_bg.jpg
+    - assets/images/laveora_logo.png
+    - assets/sounds/working.mp3
+    - assets/sounds/done.mp3
+    - assets/sounds/waiter.mp3

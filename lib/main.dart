@@ -279,21 +279,25 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
 
   void _openUrl(String url) => js.context.callMethod('open', [url]);
 
-  void _playSound(String url) {
+  void _playSound(String fileName) {
     if (kIsWeb) {
+      String assetPath = "assets/sounds/$fileName";
       js.context.callMethod('eval', [
-        "(function() { var audio = new Audio('$url'); audio.play(); })();",
+        """
+        (function() {
+          var audio = new Audio('$assetPath');
+          audio.play().catch(function(error) {
+            console.log('Audio error: ' + error);
+          });
+        })();
+        """
       ]);
     }
   }
 
-  void _playMicrowaveWorking() =>
-      _playSound("https://www.soundjay.com/misc/sounds/microwave-hum-1.mp3");
-  void _playMicrowaveDone() =>
-      _playSound("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
-  void _playWaiterBell() => _playSound(
-        "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
-      );
+  void _playMicrowaveWorking() => _playSound("working.mp3");
+  void _playMicrowaveDone() => _playSound("done.mp3");
+  void _playWaiterBell() => _playSound("waiter.mp3");
 
   void _initStatusListeners() {
     if (registeredName == null) return;
@@ -303,13 +307,15 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
         .where('customer_name', isEqualTo: registeredName)
         .snapshots()
         .listen((snapshot) {
-      if (snapshot.docs.isEmpty && _isWaiterAlertActive) {
-        setState(() => _isWaiterAlertActive = false);
-        _playWaiterBell();
-        _showStatusSnackBar(
-          "الويتر جاي لك دلوقتي يا فندم 😊",
-          CafeTheme.primaryGold,
-        );
+      for (var change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.removed && _isWaiterAlertActive) {
+          setState(() => _isWaiterAlertActive = false);
+          _playWaiterBell();
+          _showStatusSnackBar(
+            "الويتر جاي لك دلوقتي يا فندم 😊",
+            CafeTheme.primaryGold,
+          );
+        }
       }
     });
 
@@ -1496,20 +1502,23 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
     _initWaiterAlerts();
   }
 
-  void _playSound(String url) {
+  void _playSound(String fileName) {
     if (kIsWeb) {
+      String assetPath = "assets/sounds/$fileName";
       js.context.callMethod('eval', [
-        "(function() { var audio = new Audio('$url'); audio.play(); })();",
+        """
+        (function() {
+          var audio = new Audio('$assetPath');
+          audio.play().catch(function(e) { console.log('Waiter audio blocked'); });
+        })();
+        """
       ]);
     }
   }
 
-  void _playBell() => _playSound(
-        "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
-      );
+  void _playWorkingSound() => _playSound("working.mp3");
 
-  void _playWorkingSound() =>
-      _playSound("https://www.soundjay.com/misc/sounds/microwave-hum-1.mp3");
+  void _playReadySound() => _playSound("done.mp3");
 
   void _initWaiterAlerts() {
     FirebaseFirestore.instance.collection('orders').snapshots().listen((
@@ -1523,7 +1532,7 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
           String table = data['table_number']?.toString() ?? "?";
 
           if (status == 'جاهز') {
-            _playBell();
+            _playReadySound();
             _showSnack(
               "✅ طلب $customer (طاولة $table) جاهز الآن!",
               Colors.green,
