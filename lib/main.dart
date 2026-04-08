@@ -227,6 +227,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   bool _isEntryComplete = false;
   bool _hasSavedName = false;
   bool _isWaiterAlertActive = false;
+  bool _isAudioUnlocked = false;
 
   late AnimationController _glowController;
   late AnimationController _devPulseController;
@@ -277,10 +278,31 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     }
   }
 
+  void _unlockAudio() {
+    if (kIsWeb) {
+      js.context.callMethod('eval', [
+        """
+        (function() {
+          var silentAudio = new Audio('assets/sounds/working.mp3');
+          silentAudio.muted = true;
+          silentAudio.play().then(function() {
+            silentAudio.pause();
+            silentAudio.muted = false;
+            console.log('Audio Unlocked');
+          });
+        })();
+        """
+      ]);
+    }
+    setState(() {
+      _isAudioUnlocked = true;
+    });
+  }
+
   void _openUrl(String url) => js.context.callMethod('open', [url]);
 
   void _playSound(String fileName) {
-    if (kIsWeb) {
+    if (kIsWeb && _isAudioUnlocked) {
       String assetPath = "assets/sounds/$fileName";
       js.context.callMethod('eval', [
         """
@@ -547,7 +569,50 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
           children: [
             _buildMainContent(),
             if (!_isEntryComplete) _buildEntryOverlay(),
+            if (_isEntryComplete && !_isAudioUnlocked)
+              _buildAudioUnlockOverlay(),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAudioUnlockOverlay() {
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+      child: Container(
+        color: Colors.black.withOpacity(0.8),
+        width: double.infinity,
+        height: double.infinity,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.volume_up_rounded,
+                  color: CafeTheme.primaryGold, size: 80),
+              const SizedBox(height: 20),
+              const Text(
+                "للحصول على تجربة كاملة، يرجى تفعيل الصوت",
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _unlockAudio,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CafeTheme.primaryGold,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                ),
+                child: const Text(
+                  "تفعيل الصوت 🔊",
+                  style: TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1506,15 +1571,36 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
   final noteCtrl = TextEditingController();
   String? selectedCategory;
   String searchQuery = "";
+  bool _isWaiterAudioUnlocked = false;
 
   @override
   void initState() {
     super.initState();
+  }
+
+  void _unlockWaiterAudio() {
+    if (kIsWeb) {
+      js.context.callMethod('eval', [
+        """
+        (function() {
+          var silentAudio = new Audio('assets/sounds/waiter.mp3');
+          silentAudio.muted = true;
+          silentAudio.play().then(function() {
+            silentAudio.pause();
+            silentAudio.muted = false;
+          });
+        })();
+        """
+      ]);
+    }
+    setState(() {
+      _isWaiterAudioUnlocked = true;
+    });
     _initWaiterAlerts();
   }
 
   void _playSound(String fileName) {
-    if (kIsWeb) {
+    if (kIsWeb && _isWaiterAudioUnlocked) {
       String assetPath = "assets/sounds/$fileName";
       js.context.callMethod('eval', [
         """
@@ -1717,241 +1803,270 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
             ),
           ),
         ),
-        body: Row(
+        body: Stack(
           children: [
-            Container(
-              width: 130,
-              color: Colors.white.withOpacity(0.02),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    color: CafeTheme.primaryGold,
-                    width: double.infinity,
-                    child: const Text(
-                      "الأقسام",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Container(
+                  width: 130,
+                  color: Colors.white.withOpacity(0.02),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(15),
+                        color: CafeTheme.primaryGold,
+                        width: double.infinity,
+                        child: const Text(
+                          "الأقسام",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('categories')
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) return const SizedBox();
-                        var cats = snapshot.data!.docs;
+                      Expanded(
+                        child: StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('categories')
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) return const SizedBox();
+                            var cats = snapshot.data!.docs;
 
-                        if (selectedCategory == null && cats.isNotEmpty) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              setState(() {
-                                selectedCategory = cats.first['name'];
+                            if (selectedCategory == null && cats.isNotEmpty) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    selectedCategory = cats.first['name'];
+                                  });
+                                }
                               });
                             }
-                          });
-                        }
 
-                        return ListView.builder(
-                          itemCount: cats.length,
-                          itemBuilder: (c, i) {
-                            String catName = cats[i]['name'];
-                            bool isSelected = selectedCategory == catName;
-                            return InkWell(
-                              onTap: () =>
-                                  setState(() => selectedCategory = catName),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 20,
-                                  horizontal: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? Colors.white.withOpacity(0.1)
-                                      : Colors.transparent,
-                                  border: isSelected
-                                      ? const Border(
-                                          right: BorderSide(
-                                            color: CafeTheme.primaryGold,
-                                            width: 4,
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                                child: Text(
-                                  catName,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? CafeTheme.primaryGold
-                                        : Colors.white70,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
+                            return ListView.builder(
+                              itemCount: cats.length,
+                              itemBuilder: (c, i) {
+                                String catName = cats[i]['name'];
+                                bool isSelected = selectedCategory == catName;
+                                return InkWell(
+                                  onTap: () => setState(
+                                      () => selectedCategory = catName),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 20,
+                                      horizontal: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? Colors.white.withOpacity(0.1)
+                                          : Colors.transparent,
+                                      border: isSelected
+                                          ? const Border(
+                                              right: BorderSide(
+                                                color: CafeTheme.primaryGold,
+                                                width: 4,
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                    child: Text(
+                                      catName,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? CafeTheme.primaryGold
+                                            : Colors.white70,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             );
                           },
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    color: Colors.white.withOpacity(0.05),
-                    child: Column(
-                      children: [
-                        Row(
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        color: Colors.white.withOpacity(0.05),
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: TextField(
-                                controller: tableCtrl,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: "طاولة",
-                                  isDense: true,
-                                  filled: true,
-                                  fillColor: Colors.black,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: tableCtrl,
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      labelText: "طاولة",
+                                      isDense: true,
+                                      filled: true,
+                                      fillColor: Colors.black,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: TextField(
+                                    controller: nameCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: "اسم العميل",
+                                      isDense: true,
+                                      filled: true,
+                                      fillColor: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                controller: nameCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: "اسم العميل",
-                                  isDense: true,
-                                  filled: true,
-                                  fillColor: Colors.black,
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: searchCtrl,
+                              onChanged: (val) =>
+                                  setState(() => searchQuery = val),
+                              decoration: InputDecoration(
+                                hintText: "بحث عن صنف (في كل الأقسام)...",
+                                prefixIcon: const Icon(
+                                  Icons.search,
+                                  color: CafeTheme.primaryGold,
+                                ),
+                                filled: true,
+                                fillColor: Colors.black,
+                                isDense: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: searchCtrl,
-                          onChanged: (val) => setState(() => searchQuery = val),
-                          decoration: InputDecoration(
-                            hintText: "بحث عن صنف (في كل الأقسام)...",
-                            prefixIcon: const Icon(
-                              Icons.search,
-                              color: CafeTheme.primaryGold,
-                            ),
-                            filled: true,
-                            fillColor: Colors.black,
-                            isDense: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('products')
-                          .snapshots(),
-                      builder: (context, snap) {
-                        if (!snap.hasData) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
+                      ),
+                      Expanded(
+                        child: StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('products')
+                              .snapshots(),
+                          builder: (context, snap) {
+                            if (!snap.hasData) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
 
-                        var items = snap.data!.docs
-                            .map((d) => d.data() as Map<String, dynamic>)
-                            .toList();
+                            var items = snap.data!.docs
+                                .map((d) => d.data() as Map<String, dynamic>)
+                                .toList();
 
-                        if (searchQuery.isNotEmpty) {
-                          items = items
-                              .where(
-                                (i) => i['name']
-                                    .toString()
-                                    .toLowerCase()
-                                    .contains(searchQuery.toLowerCase()),
-                              )
-                              .toList();
-                        } else if (selectedCategory != null) {
-                          items = items
-                              .where((i) => i['cat'] == selectedCategory)
-                              .toList();
-                        }
+                            if (searchQuery.isNotEmpty) {
+                              items = items
+                                  .where(
+                                    (i) => i['name']
+                                        .toString()
+                                        .toLowerCase()
+                                        .contains(searchQuery.toLowerCase()),
+                                  )
+                                  .toList();
+                            } else if (selectedCategory != null) {
+                              items = items
+                                  .where((i) => i['cat'] == selectedCategory)
+                                  .toList();
+                            }
 
-                        return GridView.builder(
-                          padding: const EdgeInsets.all(10),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            childAspectRatio: 1.2,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                          ),
-                          itemCount: items.length,
-                          itemBuilder: (context, index) {
-                            var prod = items[index];
-                            return InkWell(
-                              onTap: () => _showWaiterAddDialog(prod),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: CafeTheme.surface,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.white10),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4.0,
-                                      ),
-                                      child: Text(
-                                        prod['name'],
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      "${prod['price']} ج.م",
-                                      style: const TextStyle(
-                                        color: CafeTheme.primaryGold,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(10),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                childAspectRatio: 1.2,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
                               ),
+                              itemCount: items.length,
+                              itemBuilder: (context, index) {
+                                var prod = items[index];
+                                return InkWell(
+                                  onTap: () => _showWaiterAddDialog(prod),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: CafeTheme.surface,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.white10),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4.0,
+                                          ),
+                                          child: Text(
+                                            prod['name'],
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Text(
+                                          "${prod['price']} ج.م",
+                                          style: const TextStyle(
+                                            color: CafeTheme.primaryGold,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
                             );
                           },
-                        );
-                      },
+                        ),
+                      ),
+                      if (waiterBasket.isNotEmpty) _buildBasketSummary(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (!_isWaiterAudioUnlocked)
+              BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  color: Colors.black.withOpacity(0.8),
+                  child: Center(
+                    child: ElevatedButton(
+                      onPressed: _unlockWaiterAudio,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: CafeTheme.primaryGold,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 20),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30)),
+                      ),
+                      child: const Text("تفعيل تنبيهات الصوت 🤵🔊",
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ),
-                  if (waiterBasket.isNotEmpty) _buildBasketSummary(),
-                ],
+                ),
               ),
-            ),
           ],
         ),
       ),
