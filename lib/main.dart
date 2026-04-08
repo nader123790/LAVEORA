@@ -283,13 +283,26 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
       js.context.callMethod('eval', [
         """
         (function() {
-          var silentAudio = new Audio('assets/sounds/working.mp3');
-          silentAudio.muted = true;
-          silentAudio.play().then(function() {
-            silentAudio.pause();
-            silentAudio.muted = false;
-            console.log('Audio Unlocked');
-          });
+          if (!window.audioContext) {
+            window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (window.audioContext.state === 'suspended') {
+            window.audioContext.resume();
+          }
+          
+          var oscillator = window.audioContext.createOscillator();
+          var gainNode = window.audioContext.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(window.audioContext.destination);
+          gainNode.gain.value = 0.0001;
+          oscillator.start(0);
+          oscillator.stop(0.1);
+
+          var unlockPlayer = new Audio();
+          unlockPlayer.src = 'data:audio/wav;base64,UklGRigAAABXQVZFVWVmcm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+          unlockPlayer.play().then(() => {
+            console.log('Web Audio Context Unlocked Successfully');
+          }).catch(e => console.log('Unlock audio failed:', e));
         })();
         """
       ]);
@@ -297,13 +310,14 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     setState(() {
       _isAudioUnlocked = true;
     });
+    _initStatusListeners();
   }
 
   void _openUrl(String url) => js.context.callMethod('open', [url]);
 
   void _playSound(String fileName) {
     if (kIsWeb && _isAudioUnlocked) {
-      String assetPath = "assets/sounds/$fileName";
+      String assetPath = "assets/assets/sounds/$fileName";
       js.context.callMethod('eval', [
         """
         (function() {
@@ -312,6 +326,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
           if (!audio) {
             audio = new Audio('$assetPath');
             audio.id = audioId;
+            audio.crossOrigin = "anonymous";
             audio.preload = 'auto';
             document.body.appendChild(audio);
           }
@@ -319,7 +334,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
           var playPromise = audio.play();
           if (playPromise !== undefined) {
             playPromise.then(_ => {}).catch(error => {
-              console.log('Playback prevented: ' + error);
+              console.log('Playback error: ' + error);
+              audio.src = 'assets/sounds/$fileName';
+              audio.play().catch(e => console.log('Retry failed:', e));
             });
           }
         })();
@@ -569,50 +586,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
           children: [
             _buildMainContent(),
             if (!_isEntryComplete) _buildEntryOverlay(),
-            if (_isEntryComplete && !_isAudioUnlocked)
-              _buildAudioUnlockOverlay(),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAudioUnlockOverlay() {
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-      child: Container(
-        color: Colors.black.withOpacity(0.8),
-        width: double.infinity,
-        height: double.infinity,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.volume_up_rounded,
-                  color: CafeTheme.primaryGold, size: 80),
-              const SizedBox(height: 20),
-              const Text(
-                "للحصول على تجربة كاملة، يرجى تفعيل الصوت",
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _unlockAudio,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: CafeTheme.primaryGold,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                ),
-                child: const Text(
-                  "تفعيل الصوت 🔊",
-                  style: TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -638,7 +612,14 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  buildLaveoraLogo(size: 100),
+                  GestureDetector(
+                    onTap: () {
+                      if (kIsWeb) {
+                        html.window.location.reload();
+                      }
+                    },
+                    child: buildLaveoraLogo(size: 100),
+                  ),
                   const SizedBox(height: 10),
                   const Text(
                     "LAVEORA",
@@ -714,7 +695,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                           currentTable = table;
                           _isEntryComplete = true;
                         });
-                        _initStatusListeners();
+                        _unlockAudio();
                       }
                     },
                     child: const Text(
@@ -870,7 +851,14 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
         title: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            buildLaveoraLogo(size: 40),
+            GestureDetector(
+              onTap: () {
+                if (kIsWeb) {
+                  html.window.location.reload();
+                }
+              },
+              child: buildLaveoraLogo(size: 40),
+            ),
             const SizedBox(height: 5),
             const Text(
               "LAVEORA",
@@ -1583,11 +1571,17 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
       js.context.callMethod('eval', [
         """
         (function() {
-          var silentAudio = new Audio('assets/sounds/waiter.mp3');
-          silentAudio.muted = true;
-          silentAudio.play().then(function() {
-            silentAudio.pause();
-            silentAudio.muted = false;
+          if (!window.audioContext) {
+            window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (window.audioContext.state === 'suspended') {
+            window.audioContext.resume();
+          }
+          
+          var unlockPlayer = new Audio();
+          unlockPlayer.src = 'data:audio/wav;base64,UklGRigAAABXQVZFVWVmcm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+          unlockPlayer.play().then(() => {
+             console.log('Waiter Audio Unlocked via Button Interaction');
           });
         })();
         """
@@ -1601,7 +1595,7 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
 
   void _playSound(String fileName) {
     if (kIsWeb && _isWaiterAudioUnlocked) {
-      String assetPath = "assets/sounds/$fileName";
+      String assetPath = "assets/assets/sounds/$fileName";
       js.context.callMethod('eval', [
         """
         (function() {
@@ -1610,6 +1604,7 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
           if (!audio) {
             audio = new Audio('$assetPath');
             audio.id = audioId;
+            audio.crossOrigin = "anonymous";
             audio.preload = 'auto';
             document.body.appendChild(audio);
           }
@@ -1617,7 +1612,9 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
           var playPromise = audio.play();
           if (playPromise !== undefined) {
             playPromise.then(_ => {}).catch(error => {
-              console.log('Waiter playback prevented: ' + error);
+              console.log('Waiter Playback Error: ' + error);
+              audio.src = 'assets/sounds/$fileName';
+              audio.play().catch(e => console.log('Waiter retry failed:', e));
             });
           }
         })();
