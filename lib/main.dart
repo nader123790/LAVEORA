@@ -228,6 +228,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   bool _hasSavedName = false;
   bool _isWaiterAlertActive = false;
   bool _isAudioUnlocked = false;
+  bool _showAudioPrompt = true;
 
   late AnimationController _glowController;
   late AnimationController _devPulseController;
@@ -290,16 +291,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
             window.audioContext.resume();
           }
           
-          var oscillator = window.audioContext.createOscillator();
-          var gainNode = window.audioContext.createGain();
-          oscillator.connect(gainNode);
-          gainNode.connect(window.audioContext.destination);
-          gainNode.gain.value = 0.0001;
-          oscillator.start(0);
-          oscillator.stop(0.1);
-
           var unlockPlayer = new Audio();
-          unlockPlayer.src = 'data:audio/wav;base64,UklGRigAAABXQVZFVWVmcm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+          unlockPlayer.src = 'assets/assets/sounds/waiter.mp3';
+          unlockPlayer.volume = 0;
           unlockPlayer.play().then(() => {
             console.log('Web Audio Context Unlocked Successfully');
           }).catch(e => console.log('Unlock audio failed:', e));
@@ -309,6 +303,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     }
     setState(() {
       _isAudioUnlocked = true;
+      _showAudioPrompt = false;
     });
     _initStatusListeners();
   }
@@ -585,7 +580,64 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
         child: Stack(
           children: [
             _buildMainContent(),
-            if (!_isEntryComplete) _buildEntryOverlay(),
+            if (_showAudioPrompt) _buildAudioUnlockOverlay(),
+            if (!_isEntryComplete && !_showAudioPrompt) _buildEntryOverlay(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAudioUnlockOverlay() {
+    return Container(
+      color: Colors.black,
+      width: double.infinity,
+      height: double.infinity,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            buildLaveoraLogo(size: 80),
+            const SizedBox(height: 30),
+            const Text(
+              "LAVEORA",
+              style: TextStyle(
+                color: CafeTheme.primaryGold,
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 4,
+              ),
+            ),
+            const SizedBox(height: 40),
+            GestureDetector(
+              onTap: _unlockAudio,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border:
+                          Border.all(color: CafeTheme.primaryGold, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.volume_up_rounded,
+                      color: CafeTheme.primaryGold,
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  const Text(
+                    "اضغط لتفعيل الصوت",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -695,7 +747,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                           currentTable = table;
                           _isEntryComplete = true;
                         });
-                        _unlockAudio();
                       }
                     },
                     child: const Text(
@@ -1579,7 +1630,8 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
           }
           
           var unlockPlayer = new Audio();
-          unlockPlayer.src = 'data:audio/wav;base64,UklGRigAAABXQVZFVWVmcm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+          unlockPlayer.src = 'assets/assets/sounds/waiter.mp3';
+          unlockPlayer.volume = 0;
           unlockPlayer.play().then(() => {
              console.log('Waiter Audio Unlocked via Button Interaction');
           });
