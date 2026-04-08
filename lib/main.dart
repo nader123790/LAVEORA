@@ -279,33 +279,43 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     }
   }
 
-  void _unlockAudio() {
-    if (kIsWeb) {
-      js.context.callMethod('eval', [
-        """
-        (function() {
-          if (!window.audioContext) {
-            window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          }
-          if (window.audioContext.state === 'suspended') {
-            window.audioContext.resume();
-          }
-          
-          var unlockPlayer = new Audio();
-          unlockPlayer.src = 'assets/assets/sounds/waiter.mp3';
-          unlockPlayer.volume = 0;
-          unlockPlayer.play().then(() => {
-            console.log('Web Audio Context Unlocked Successfully');
-          }).catch(e => console.log('Unlock audio failed:', e));
-        })();
-        """
-      ]);
+  void _toggleAudio() {
+    if (!_isAudioUnlocked) {
+      if (kIsWeb) {
+        js.context.callMethod('eval', [
+          """
+          (function() {
+            if (!window.audioContext) {
+              window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (window.audioContext.state === 'suspended') {
+              window.audioContext.resume();
+            }
+            
+            var unlockPlayer = new Audio();
+            unlockPlayer.src = 'assets/assets/sounds/waiter.mp3';
+            unlockPlayer.volume = 0;
+            unlockPlayer.play().then(() => {
+              console.log('Web Audio Context Unlocked Successfully');
+            }).catch(e => console.log('Unlock audio failed:', e));
+          })();
+          """
+        ]);
+      }
+      setState(() {
+        _isAudioUnlocked = true;
+        _showAudioPrompt = false;
+      });
+      _initStatusListeners();
+    } else {
+      setState(() {
+        _isAudioUnlocked = false;
+      });
     }
-    setState(() {
-      _isAudioUnlocked = true;
-      _showAudioPrompt = false;
-    });
-    _initStatusListeners();
+  }
+
+  void _unlockAudio() {
+    _toggleAudio();
   }
 
   void _openUrl(String url) => js.context.callMethod('open', [url]);
@@ -958,6 +968,31 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                   color: CafeTheme.primaryGold,
                   size: 16,
                 ),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 5, top: 15),
+          child: GestureDetector(
+            onTap: _toggleAudio,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _isAudioUnlocked
+                    ? CafeTheme.primaryGold.withOpacity(0.2)
+                    : Colors.red.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: _isAudioUnlocked
+                      ? CafeTheme.primaryGold
+                      : Colors.redAccent,
+                ),
+              ),
+              child: Icon(
+                _isAudioUnlocked ? Icons.volume_up : Icons.volume_off,
+                color: _isAudioUnlocked ? CafeTheme.primaryGold : Colors.redAccent,
+                size: 16,
               ),
             ),
           ),
@@ -1617,32 +1652,42 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
     super.initState();
   }
 
-  void _unlockWaiterAudio() {
-    if (kIsWeb) {
-      js.context.callMethod('eval', [
-        """
-        (function() {
-          if (!window.audioContext) {
-            window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          }
-          if (window.audioContext.state === 'suspended') {
-            window.audioContext.resume();
-          }
-          
-          var unlockPlayer = new Audio();
-          unlockPlayer.src = 'assets/assets/sounds/waiter.mp3';
-          unlockPlayer.volume = 0;
-          unlockPlayer.play().then(() => {
-             console.log('Waiter Audio Unlocked via Button Interaction');
-          });
-        })();
-        """
-      ]);
+  void _toggleWaiterAudio() {
+    if (!_isWaiterAudioUnlocked) {
+      if (kIsWeb) {
+        js.context.callMethod('eval', [
+          """
+          (function() {
+            if (!window.audioContext) {
+              window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (window.audioContext.state === 'suspended') {
+              window.audioContext.resume();
+            }
+            
+            var unlockPlayer = new Audio();
+            unlockPlayer.src = 'assets/assets/sounds/waiter.mp3';
+            unlockPlayer.volume = 0;
+            unlockPlayer.play().then(() => {
+               console.log('Waiter Audio Unlocked via Button Interaction');
+            });
+          })();
+          """
+        ]);
+      }
+      setState(() {
+        _isWaiterAudioUnlocked = true;
+      });
+      _initWaiterAlerts();
+    } else {
+      setState(() {
+        _isWaiterAudioUnlocked = false;
+      });
     }
-    setState(() {
-      _isWaiterAudioUnlocked = true;
-    });
-    _initWaiterAlerts();
+  }
+
+  void _unlockWaiterAudio() {
+    _toggleWaiterAudio();
   }
 
   void _playSound(String fileName) {
@@ -1851,6 +1896,32 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: ElevatedButton.icon(
+                onPressed: _toggleWaiterAudio,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isWaiterAudioUnlocked ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                  side: BorderSide(color: _isWaiterAudioUnlocked ? Colors.green : Colors.redAccent),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                icon: Icon(
+                  _isWaiterAudioUnlocked ? Icons.volume_up : Icons.volume_off,
+                  color: _isWaiterAudioUnlocked ? Colors.green : Colors.redAccent,
+                  size: 18,
+                ),
+                label: Text(
+                  _isWaiterAudioUnlocked ? "الصوت يعمل" : "الصوت مكتوم",
+                  style: TextStyle(
+                    color: _isWaiterAudioUnlocked ? Colors.green : Colors.redAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         body: Stack(
           children: [
