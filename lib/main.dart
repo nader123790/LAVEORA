@@ -285,10 +285,21 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
       js.context.callMethod('eval', [
         """
         (function() {
-          var audio = new Audio('$assetPath');
-          audio.play().catch(function(error) {
-            console.log('Audio error: ' + error);
-          });
+          var audioId = 'audio_' + '$fileName'.replace('.', '_');
+          var audio = document.getElementById(audioId);
+          if (!audio) {
+            audio = new Audio('$assetPath');
+            audio.id = audioId;
+            audio.preload = 'auto';
+            document.body.appendChild(audio);
+          }
+          audio.currentTime = 0;
+          var playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.then(_ => {}).catch(error => {
+              console.log('Playback prevented: ' + error);
+            });
+          }
         })();
         """
       ]);
@@ -1508,8 +1519,21 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
       js.context.callMethod('eval', [
         """
         (function() {
-          var audio = new Audio('$assetPath');
-          audio.play().catch(function(e) { console.log('Waiter audio blocked'); });
+          var audioId = 'audio_waiter_' + '$fileName'.replace('.', '_');
+          var audio = document.getElementById(audioId);
+          if (!audio) {
+            audio = new Audio('$assetPath');
+            audio.id = audioId;
+            audio.preload = 'auto';
+            document.body.appendChild(audio);
+          }
+          audio.currentTime = 0;
+          var playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.then(_ => {}).catch(error => {
+              console.log('Waiter playback prevented: ' + error);
+            });
+          }
         })();
         """
       ]);
@@ -1517,14 +1541,18 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
   }
 
   void _playWorkingSound() => _playSound("working.mp3");
-
   void _playReadySound() => _playSound("done.mp3");
+  void _playNewOrderSound() => _playSound("waiter.mp3");
 
   void _initWaiterAlerts() {
     FirebaseFirestore.instance.collection('orders').snapshots().listen((
       snapshot,
     ) {
       for (var change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          _playNewOrderSound();
+        }
+
         if (change.type == DocumentChangeType.modified) {
           var data = change.doc.data() as Map<String, dynamic>;
           String status = data['status'] ?? "";
@@ -1851,8 +1879,10 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                         if (searchQuery.isNotEmpty) {
                           items = items
                               .where(
-                                (i) =>
-                                    i['name'].toString().contains(searchQuery),
+                                (i) => i['name']
+                                    .toString()
+                                    .toLowerCase()
+                                    .contains(searchQuery.toLowerCase()),
                               )
                               .toList();
                         } else if (selectedCategory != null) {
