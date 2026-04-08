@@ -1109,6 +1109,11 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
           delegate: SliverChildBuilderDelegate((c, i) {
             var item = items[i].data() as Map<String, dynamic>;
             String? imgUrl = item['image_url'];
+
+            // نتحقق إذا كان الصنف له أحجام متعددة
+            bool hasSizes =
+                item['sizes'] != null && (item['sizes'] as List).isNotEmpty;
+
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
@@ -1142,11 +1147,12 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                   ),
                 ),
                 subtitle: Text(
-                  "${item['price']} ج.م",
-                  style: const TextStyle(
-                    color: CafeTheme.primaryGold,
+                  hasSizes ? "أحجام مختلفة" : "${item['price']} ج.م",
+                  style: TextStyle(
+                    color:
+                        hasSizes ? Colors.orangeAccent : CafeTheme.primaryGold,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: hasSizes ? 14 : 16,
                   ),
                 ),
                 trailing: IconButton(
@@ -1167,70 +1173,137 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
 
   void _showAddDialog(Map<String, dynamic> item) {
     _noteController.clear();
+
+    List<dynamic>? sizes = item['sizes'];
+    Map<String, dynamic>? selectedSize;
+    double currentPrice = (item['price'] as num).toDouble();
+
+    if (sizes != null && sizes.isNotEmpty) {
+      selectedSize = sizes.first;
+      currentPrice = (selectedSize!['price'] as num).toDouble();
+    }
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF151515),
-        title: Text(
-          "تخصيص ${item['name']}",
-          textAlign: TextAlign.right,
-          style: const TextStyle(color: CafeTheme.primaryGold),
-        ),
-        content: TextField(
-          controller: _noteController,
-          textAlign: TextAlign.right,
-          decoration: InputDecoration(
-            hintText: "أي إضافات تحب نجهزها لك؟",
-            hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: BorderSide.none,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF151515),
+            title: Text(
+              "تخصيص ${item['name']}",
+              textAlign: TextAlign.right,
+              style: const TextStyle(color: CafeTheme.primaryGold),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("إلغاء"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CafeTheme.primaryGold,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (sizes != null && sizes.isNotEmpty) ...[
+                  const Text(
+                    "اختر الحجم:",
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        color: Colors.white70, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    children: sizes.map((s) {
+                      bool isSelected = selectedSize == s;
+                      return ChoiceChip(
+                        label: Text("${s['name']} - ${s['price']} ج.م"),
+                        selected: isSelected,
+                        selectedColor: CafeTheme.primaryGold,
+                        backgroundColor: Colors.white.withOpacity(0.05),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        onSelected: (bool selected) {
+                          if (selected) {
+                            setDialogState(() {
+                              selectedSize = s;
+                              currentPrice = (s['price'] as num).toDouble();
+                            });
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                TextField(
+                  controller: _noteController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    hintText: "أي إضافات تحب نجهزها لك؟",
+                    hintStyle:
+                        const TextStyle(color: Colors.white24, fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            onPressed: () {
-              setState(() {
-                String userNote = _noteController.text.isEmpty
-                    ? "بدون إضافات"
-                    : _noteController.text;
-                int index = basket.indexWhere(
-                  (e) => e['name'] == item['name'] && e['note'] == userNote,
-                );
-                if (index != -1) {
-                  basket[index]['quantity']++;
-                } else {
-                  basket.add({
-                    'name': item['name'],
-                    'price': item['price'],
-                    'image_url': item['image_url'],
-                    'note': userNote,
-                    'quantity': 1,
-                  });
-                }
-              });
-              Navigator.pop(context);
-            },
-            child: const Text(
-              "إضافة",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("إلغاء"),
               ),
-            ),
-          ),
-        ],
-      ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CafeTheme.primaryGold,
+                ),
+                onPressed: () {
+                  setState(() {
+                    String userNote = _noteController.text.isEmpty
+                        ? "بدون إضافات"
+                        : _noteController.text;
+
+                    String itemName = item['name'];
+                    if (selectedSize != null) {
+                      itemName += " (${selectedSize!['name']})";
+                    }
+
+                    int index = basket.indexWhere(
+                      (e) =>
+                          e['name'] == itemName &&
+                          e['note'] == userNote &&
+                          e['price'] == currentPrice,
+                    );
+
+                    if (index != -1) {
+                      basket[index]['quantity']++;
+                    } else {
+                      basket.add({
+                        'name': itemName,
+                        'price': currentPrice,
+                        'image_url': item['image_url'],
+                        'note': userNote,
+                        'quantity': 1,
+                      });
+                    }
+                  });
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  "إضافة",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        });
+      },
     );
   }
 
@@ -1504,6 +1577,8 @@ class WaiterTerminal extends StatefulWidget {
 }
 
 class _WaiterTerminalState extends State<WaiterTerminal> {
+  int _currentTabIndex = 0; // State variable for Navigation Bar
+
   final List<Map<String, dynamic>> waiterBasket = [];
   final tableCtrl = TextEditingController();
   final nameCtrl = TextEditingController();
@@ -1564,68 +1639,136 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
 
   void _showWaiterAddDialog(Map<String, dynamic> item) {
     noteCtrl.clear();
+
+    // Size logic integration for Waiter
+    List<dynamic>? sizes = item['sizes'];
+    Map<String, dynamic>? selectedSize;
+    double currentPrice = (item['price'] as num).toDouble();
+
+    if (sizes != null && sizes.isNotEmpty) {
+      selectedSize = sizes.first;
+      currentPrice = (selectedSize!['price'] as num).toDouble();
+    }
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF151515),
-        title: Text(
-          "إضافة ${item['name']}",
-          textAlign: TextAlign.right,
-          style: const TextStyle(color: CafeTheme.primaryGold),
-        ),
-        content: TextField(
-          controller: noteCtrl,
-          textAlign: TextAlign.right,
-          decoration: InputDecoration(
-            hintText: "ملاحظات (سكر زيادة، بدون ثلج...)",
-            hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: BorderSide.none,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF151515),
+            title: Text(
+              "إضافة ${item['name']}",
+              textAlign: TextAlign.right,
+              style: const TextStyle(color: CafeTheme.primaryGold),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("إلغاء"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CafeTheme.primaryGold,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (sizes != null && sizes.isNotEmpty) ...[
+                  const Text(
+                    "اختر الحجم:",
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        color: Colors.white70, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    children: sizes.map((s) {
+                      bool isSelected = selectedSize == s;
+                      return ChoiceChip(
+                        label: Text("${s['name']} - ${s['price']} ج.م"),
+                        selected: isSelected,
+                        selectedColor: CafeTheme.primaryGold,
+                        backgroundColor: Colors.white.withOpacity(0.05),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        onSelected: (bool selected) {
+                          if (selected) {
+                            setDialogState(() {
+                              selectedSize = s;
+                              currentPrice = (s['price'] as num).toDouble();
+                            });
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                TextField(
+                  controller: noteCtrl,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    hintText: "ملاحظات (سكر زيادة، بدون ثلج...)",
+                    hintStyle:
+                        const TextStyle(color: Colors.white24, fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            onPressed: () {
-              setState(() {
-                String note =
-                    noteCtrl.text.isEmpty ? "بدون ملاحظات" : noteCtrl.text;
-                int idx = waiterBasket.indexWhere(
-                  (e) => e['name'] == item['name'] && e['note'] == note,
-                );
-                if (idx != -1) {
-                  waiterBasket[idx]['qty']++;
-                } else {
-                  waiterBasket.add({
-                    'name': item['name'],
-                    'price': item['price'],
-                    'qty': 1,
-                    'note': note,
-                  });
-                }
-              });
-              Navigator.pop(context);
-            },
-            child: const Text(
-              "إضافة للسلة",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("إلغاء"),
               ),
-            ),
-          ),
-        ],
-      ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CafeTheme.primaryGold,
+                ),
+                onPressed: () {
+                  setState(() {
+                    String note =
+                        noteCtrl.text.isEmpty ? "بدون ملاحظات" : noteCtrl.text;
+
+                    String itemName = item['name'];
+                    if (selectedSize != null) {
+                      itemName += " (${selectedSize!['name']})";
+                    }
+
+                    int idx = waiterBasket.indexWhere(
+                      (e) =>
+                          e['name'] == itemName &&
+                          e['note'] == note &&
+                          e['price'] == currentPrice,
+                    );
+
+                    if (idx != -1) {
+                      waiterBasket[idx]['qty']++;
+                    } else {
+                      waiterBasket.add({
+                        'name': itemName,
+                        'price': currentPrice,
+                        'qty': 1,
+                        'note': note,
+                      });
+                    }
+                  });
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  "إضافة للسلة",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        });
+      },
     );
   }
 
@@ -1686,6 +1829,428 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
     );
   }
 
+  // --- شاشة عرض وإدارة الطلبات للويتر (محدثة للإخفاء التلقائي) ---
+  Widget _buildOrdersManagementView() {
+    return StreamBuilder<QuerySnapshot>(
+      // التعديل هنا: بنعرض فقط الأوردرات اللي حالتها مش "تم الحساب" ومش "ملغي"
+      stream: FirebaseFirestore.instance
+          .collection('orders')
+          .where('status', whereNotIn: ['تم الحساب', 'ملغي']).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Center(child: Text("حدث خطأ في تحميل البيانات"));
+        }
+        if (!snapshot.hasData) {
+          return const Center(
+              child: CircularProgressIndicator(color: CafeTheme.primaryGold));
+        }
+
+        var orders = snapshot.data!.docs;
+
+        // ترتيب يدوي حسب الوقت لأن whereNotIn أحياناً تمنع orderBy في بعض إعدادات Firestore
+        orders.sort((a, b) {
+          var t1 =
+              (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+          var t2 =
+              (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+          if (t1 == null || t2 == null) return 0;
+          return t2.compareTo(t1); // الأحدث فوق
+        });
+
+        if (orders.isEmpty) {
+          return const Center(
+            child: Text(
+              "لا توجد طلبات نشطة حالياً ✨",
+              style: TextStyle(color: Colors.white54, fontSize: 18),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(20),
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            var doc = orders[index];
+            var data = doc.data() as Map<String, dynamic>;
+            List items = data['items_with_qty'] ?? [];
+
+            Color statusColor = Colors.white70;
+            switch (data['status']) {
+              case 'جاهز':
+                statusColor = Colors.greenAccent;
+                break;
+              case 'جاري التجهيز':
+                statusColor = Colors.orangeAccent;
+                break;
+              default:
+                statusColor = Colors.white70;
+            }
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 15),
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: statusColor.withOpacity(0.5)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "طاولة: ${data['table_number']} | ${data['customer_name']}",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: CafeTheme.primaryGold,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border:
+                              Border.all(color: statusColor.withOpacity(0.3)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: [
+                              'قيد الانتظار',
+                              'جاري التجهيز',
+                              'جاهز',
+                              'تم الحساب',
+                              'ملغي'
+                            ].contains(data['status'])
+                                ? data['status']
+                                : 'قيد الانتظار',
+                            icon:
+                                Icon(Icons.arrow_drop_down, color: statusColor),
+                            dropdownColor: const Color(0xFF151515),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            items: [
+                              'قيد الانتظار',
+                              'جاري التجهيز',
+                              'جاهز',
+                              'تم الحساب',
+                              'ملغي'
+                            ]
+                                .map((s) =>
+                                    DropdownMenuItem(value: s, child: Text(s)))
+                                .toList(),
+                            onChanged: (val) async {
+                              if (val != null) {
+                                if (val == 'تم الحساب') {
+                                  // هنا هنمسح الدوكومنت خالص من الفايربيز
+                                  await doc.reference.delete();
+                                  _showSnack(
+                                      "تم تحصيل الحساب وحذف الطلب نهائياً ✅",
+                                      Colors.redAccent);
+                                } else {
+                                  // لو اختار أي حالة تانية (جاهز، جاري التجهيز...) يحدث الحالة عادي
+                                  doc.reference.update({'status': val});
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(color: Colors.white24, height: 20),
+                  ...items.map((item) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Text("${item['qty']}x ",
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
+                            Expanded(
+                                child: Text("${item['name']}",
+                                    style: const TextStyle(
+                                        color: Colors.white70))),
+                          ],
+                        ),
+                      )),
+                  if (data['note'] != null &&
+                      data['note'] != "بدون إضافات") ...[
+                    const SizedBox(height: 8),
+                    Text("📝 ملاحظات: ${data['note']}",
+                        style: const TextStyle(
+                            color: Colors.orangeAccent, fontSize: 12)),
+                  ],
+                  const SizedBox(height: 10),
+                  Text(
+                    "الإجمالي: ${data['total_price']} ج.م",
+                    style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // --- شاشة نقطة البيع (POS) ---
+  Widget _buildPOSView() {
+    return Row(
+      children: [
+        Container(
+          width: 130,
+          color: Colors.white.withOpacity(0.02),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(15),
+                color: CafeTheme.primaryGold,
+                width: double.infinity,
+                child: const Text(
+                  "الأقسام",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('categories')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const SizedBox();
+                    var cats = snapshot.data!.docs;
+
+                    if (selectedCategory == null && cats.isNotEmpty) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            selectedCategory = cats.first['name'];
+                          });
+                        }
+                      });
+                    }
+
+                    return ListView.builder(
+                      itemCount: cats.length,
+                      itemBuilder: (c, i) {
+                        String catName = cats[i]['name'];
+                        bool isSelected = selectedCategory == catName;
+                        return InkWell(
+                          onTap: () =>
+                              setState(() => selectedCategory = catName),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20,
+                              horizontal: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.white.withOpacity(0.1)
+                                  : Colors.transparent,
+                              border: isSelected
+                                  ? const Border(
+                                      right: BorderSide(
+                                        color: CafeTheme.primaryGold,
+                                        width: 4,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            child: Text(
+                              catName,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? CafeTheme.primaryGold
+                                    : Colors.white70,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                color: Colors.white.withOpacity(0.05),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: tableCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: "طاولة",
+                              isDense: true,
+                              filled: true,
+                              fillColor: Colors.black,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: nameCtrl,
+                            decoration: const InputDecoration(
+                              labelText: "اسم العميل",
+                              isDense: true,
+                              filled: true,
+                              fillColor: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: searchCtrl,
+                      onChanged: (val) => setState(() => searchQuery = val),
+                      decoration: InputDecoration(
+                        hintText: "بحث عن صنف (في كل الأقسام)...",
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: CafeTheme.primaryGold,
+                        ),
+                        filled: true,
+                        fillColor: Colors.black,
+                        isDense: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('products')
+                      .snapshots(),
+                  builder: (context, snap) {
+                    if (!snap.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+
+                    var items = snap.data!.docs
+                        .map((d) => d.data() as Map<String, dynamic>)
+                        .toList();
+
+                    if (searchQuery.isNotEmpty) {
+                      items = items
+                          .where(
+                            (i) => i['name'].toString().contains(searchQuery),
+                          )
+                          .toList();
+                    } else if (selectedCategory != null) {
+                      items = items
+                          .where((i) => i['cat'] == selectedCategory)
+                          .toList();
+                    }
+
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(10),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 1.2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        var prod = items[index];
+                        // نتحقق إذا كان الصنف له أحجام متعددة
+                        bool hasSizes = prod['sizes'] != null &&
+                            (prod['sizes'] as List).isNotEmpty;
+
+                        return InkWell(
+                          onTap: () => _showWaiterAddDialog(prod),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: CafeTheme.surface,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white10),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4.0,
+                                  ),
+                                  child: Text(
+                                    prod['name'],
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  hasSizes
+                                      ? "أحجام مختلفة"
+                                      : "${prod['price']} ج.م",
+                                  style: TextStyle(
+                                    color: hasSizes
+                                        ? Colors.orangeAccent
+                                        : CafeTheme.primaryGold,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: hasSizes ? 11 : 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              if (waiterBasket.isNotEmpty) _buildBasketSummary(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -1702,241 +2267,30 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
             ),
           ),
         ),
-        body: Row(
-          children: [
-            Container(
-              width: 130,
-              color: Colors.white.withOpacity(0.02),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    color: CafeTheme.primaryGold,
-                    width: double.infinity,
-                    child: const Text(
-                      "الأقسام",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('categories')
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) return const SizedBox();
-                        var cats = snapshot.data!.docs;
-
-                        if (selectedCategory == null && cats.isNotEmpty) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              setState(() {
-                                selectedCategory = cats.first['name'];
-                              });
-                            }
-                          });
-                        }
-
-                        return ListView.builder(
-                          itemCount: cats.length,
-                          itemBuilder: (c, i) {
-                            String catName = cats[i]['name'];
-                            bool isSelected = selectedCategory == catName;
-                            return InkWell(
-                              onTap: () =>
-                                  setState(() => selectedCategory = catName),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 20,
-                                  horizontal: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? Colors.white.withOpacity(0.1)
-                                      : Colors.transparent,
-                                  border: isSelected
-                                      ? const Border(
-                                          right: BorderSide(
-                                            color: CafeTheme.primaryGold,
-                                            width: 4,
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                                child: Text(
-                                  catName,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? CafeTheme.primaryGold
-                                        : Colors.white70,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: CafeTheme.surface,
+          selectedItemColor: CafeTheme.primaryGold,
+          unselectedItemColor: Colors.white54,
+          currentIndex: _currentTabIndex,
+          onTap: (index) {
+            setState(() {
+              _currentTabIndex = index;
+            });
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.point_of_sale),
+              label: "نقطة البيع (POS)",
             ),
-            Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    color: Colors.white.withOpacity(0.05),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: tableCtrl,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: "طاولة",
-                                  isDense: true,
-                                  filled: true,
-                                  fillColor: Colors.black,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                controller: nameCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: "اسم العميل",
-                                  isDense: true,
-                                  filled: true,
-                                  fillColor: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: searchCtrl,
-                          onChanged: (val) => setState(() => searchQuery = val),
-                          decoration: InputDecoration(
-                            hintText: "بحث عن صنف (في كل الأقسام)...",
-                            prefixIcon: const Icon(
-                              Icons.search,
-                              color: CafeTheme.primaryGold,
-                            ),
-                            filled: true,
-                            fillColor: Colors.black,
-                            isDense: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('products')
-                          .snapshots(),
-                      builder: (context, snap) {
-                        if (!snap.hasData) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-
-                        var items = snap.data!.docs
-                            .map((d) => d.data() as Map<String, dynamic>)
-                            .toList();
-
-                        if (searchQuery.isNotEmpty) {
-                          items = items
-                              .where(
-                                (i) =>
-                                    i['name'].toString().contains(searchQuery),
-                              )
-                              .toList();
-                        } else if (selectedCategory != null) {
-                          items = items
-                              .where((i) => i['cat'] == selectedCategory)
-                              .toList();
-                        }
-
-                        return GridView.builder(
-                          padding: const EdgeInsets.all(10),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            childAspectRatio: 1.2,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                          ),
-                          itemCount: items.length,
-                          itemBuilder: (context, index) {
-                            var prod = items[index];
-                            return InkWell(
-                              onTap: () => _showWaiterAddDialog(prod),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: CafeTheme.surface,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.white10),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4.0,
-                                      ),
-                                      child: Text(
-                                        prod['name'],
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      "${prod['price']} ج.م",
-                                      style: const TextStyle(
-                                        color: CafeTheme.primaryGold,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  if (waiterBasket.isNotEmpty) _buildBasketSummary(),
-                ],
-              ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.receipt_long),
+              label: "إدارة الطلبات",
             ),
           ],
         ),
+        body: _currentTabIndex == 0
+            ? _buildPOSView()
+            : _buildOrdersManagementView(),
       ),
     );
   }
