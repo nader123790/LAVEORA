@@ -991,7 +991,8 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
               ),
               child: Icon(
                 _isAudioUnlocked ? Icons.volume_up : Icons.volume_off,
-                color: _isAudioUnlocked ? CafeTheme.primaryGold : Colors.redAccent,
+                color:
+                    _isAudioUnlocked ? CafeTheme.primaryGold : Colors.redAccent,
                 size: 16,
               ),
             ),
@@ -1902,19 +1903,28 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
               child: ElevatedButton.icon(
                 onPressed: _toggleWaiterAudio,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _isWaiterAudioUnlocked ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-                  side: BorderSide(color: _isWaiterAudioUnlocked ? Colors.green : Colors.redAccent),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  backgroundColor: _isWaiterAudioUnlocked
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.red.withOpacity(0.2),
+                  side: BorderSide(
+                      color: _isWaiterAudioUnlocked
+                          ? Colors.green
+                          : Colors.redAccent),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
                 ),
                 icon: Icon(
                   _isWaiterAudioUnlocked ? Icons.volume_up : Icons.volume_off,
-                  color: _isWaiterAudioUnlocked ? Colors.green : Colors.redAccent,
+                  color:
+                      _isWaiterAudioUnlocked ? Colors.green : Colors.redAccent,
                   size: 18,
                 ),
                 label: Text(
                   _isWaiterAudioUnlocked ? "الصوت يعمل" : "الصوت مكتوم",
                   style: TextStyle(
-                    color: _isWaiterAudioUnlocked ? Colors.green : Colors.redAccent,
+                    color: _isWaiterAudioUnlocked
+                        ? Colors.green
+                        : Colors.redAccent,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
