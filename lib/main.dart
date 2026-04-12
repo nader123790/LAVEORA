@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:ui';
 import 'dart:js' as js;
 import 'dart:html' as html;
-import 'dart:math' show cos, sqrt, asin;
 
 import 'firebase_options.dart';
 
@@ -53,150 +52,9 @@ class LaveoraLuxuryApp extends StatelessWidget {
           onSurface: Colors.white,
         ),
       ),
-      home: const LocationCheckWrapper(),
+      home:
+          const MenuPage(), // الانتقال مباشرة للمنيو (التي ستحتوي على اختيار النوع)
     );
-  }
-}
-
-class LocationCheckWrapper extends StatefulWidget {
-  const LocationCheckWrapper({super.key});
-
-  @override
-  State<LocationCheckWrapper> createState() => _LocationCheckWrapperState();
-}
-
-class _LocationCheckWrapperState extends State<LocationCheckWrapper> {
-  bool _isLoading = true;
-  bool _isOutOfRange = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkLocation();
-  }
-
-  Future<void> _checkLocation() async {
-    setState(() => _isLoading = true);
-    try {
-      final settings = await FirebaseFirestore.instance
-          .collection('settings')
-          .doc('cafe_location')
-          .get();
-
-      if (!settings.exists) {
-        setState(() {
-          _isOutOfRange = false;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      double cafeLat = settings.data()?['lat'] ?? 0.0;
-      double cafeLon = settings.data()?['lon'] ?? 0.0;
-      double allowedDistance =
-          (settings.data()?['allowed_range'] ?? 100.0).toDouble();
-
-      if (kIsWeb) {
-        final pos =
-            await html.window.navigator.geolocation.getCurrentPosition();
-        double uLat = (pos as dynamic).coords.latitude;
-        double uLon = (pos as dynamic).coords.longitude;
-
-        var p = 0.017453292519943295;
-        var c = cos;
-        var a = 0.5 -
-            c((uLat - cafeLat) * p) / 2 +
-            c(cafeLat * p) * c(uLat * p) * (1 - c((uLon - cafeLon) * p)) / 2;
-        double distance = 12742000 * asin(sqrt(a));
-
-        setState(() {
-          _isOutOfRange = distance > allowedDistance;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isOutOfRange = false;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("GPS Error: $e");
-      setState(() {
-        _isOutOfRange = true;
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: CafeTheme.primaryGold),
-        ),
-      );
-    }
-
-    if (_isOutOfRange) {
-      return Scaffold(
-        body: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              colors: [Colors.red.withOpacity(0.15), Colors.black],
-              radius: 1.0,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              buildLaveoraLogo(size: 80),
-              const SizedBox(height: 30),
-              const Text(
-                "LAVEORA",
-                style: TextStyle(
-                  color: CafeTheme.primaryGold,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  "عذراً، أنت خارج نطاق الخدمة المسموح به.\nيرجى التواجد داخل الكافية لتتمكن من الطلب ✨",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                    height: 1.6,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 50),
-              ElevatedButton.icon(
-                onPressed: _checkLocation,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: CafeTheme.primaryGold,
-                  foregroundColor: Colors.black,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                ),
-                icon: const Icon(Icons.location_on),
-                label: const Text("إعادة المحاولة",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return const MenuPage();
   }
 }
 
@@ -224,6 +82,12 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   List<Map<String, dynamic>> basket = [];
   String? registeredName;
   String? currentTable;
+
+  // متغيرات جديدة للدليفري
+  String? orderType; // 'داخل المكان' أو 'دليفري'
+  String? customerPhone;
+  String? customerAddress;
+
   bool _isEntryComplete = false;
   bool _hasSavedName = false;
   bool _isWaiterAlertActive = false;
@@ -235,6 +99,8 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   final TextEditingController _noteController = TextEditingController();
   final TextEditingController _nameEntryController = TextEditingController();
   final TextEditingController _tableEntryController = TextEditingController();
+  final TextEditingController _phoneEntryController = TextEditingController();
+  final TextEditingController _addressEntryController = TextEditingController();
 
   @override
   void initState() {
@@ -567,97 +433,80 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                       letterSpacing: 5,
                     ),
                   ),
-                  const Text(
-                    "Luxury Experience",
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 14,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    _hasSavedName
-                        ? "أهلاً بك يا $registeredName"
-                        : "مرحباً بك في عالمنا الخاص",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white60, fontSize: 14),
-                  ),
-                  const SizedBox(height: 40),
-                  if (!_hasSavedName)
-                    TextField(
-                      controller: _nameEntryController,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: "اسمك الكريم..",
-                        filled: true,
-                        fillColor: Colors.black.withOpacity(0.3),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 15),
-                  TextField(
-                    controller: _tableEntryController,
-                    textAlign: TextAlign.center,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(color: Colors.white, fontSize: 20),
-                    decoration: InputDecoration(
-                      hintText: "رقم الطاولة..",
-                      filled: true,
-                      fillColor: Colors.black.withOpacity(0.3),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 25),
-                  _buildAnimatedButton(
-                    onPressed: () {
-                      String name = _hasSavedName
-                          ? registeredName!
-                          : _nameEntryController.text.trim();
-                      String table = _tableEntryController.text.trim();
+                  const SizedBox(height: 30),
 
-                      if (name.isNotEmpty && table.isNotEmpty) {
-                        if (kIsWeb) {
-                          html.window.localStorage['customer_name'] = name;
-                        }
-                        setState(() {
-                          registeredName = name;
-                          currentTable = table;
-                          _isEntryComplete = true;
-                        });
-                        _initStatusListeners();
-                      }
-                    },
-                    child: const Text(
-                      "ابدأ تجربة الرفاهية ✨",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                  // نظام اختيار نوع الطلب الجديد
+                  if (orderType == null) ...[
+                    const Text("اختر مكان تواجدك الآن ✨",
+                        style: TextStyle(color: Colors.white70)),
+                    const SizedBox(height: 20),
+                    _buildAnimatedButton(
+                      onPressed: () =>
+                          setState(() => orderType = "داخل المكان"),
+                      child: const Text("أنا داخل الكافيه ☕",
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildAnimatedButton(
+                      color: Colors.white12,
+                      onPressed: () => setState(() => orderType = "دليفري"),
+                      child: const Text("أطلب دليفري 🚗",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ] else ...[
+                    // الحقول بناءً على الاختيار
+                    const Text("بيانات الاستلام",
+                        style: TextStyle(
+                            color: CafeTheme.primaryGold,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 20),
+                    if (!_hasSavedName)
+                      _entryField(
+                          _nameEntryController, "الاسم الكريم..", Icons.person),
+
+                    const SizedBox(height: 15),
+
+                    if (orderType == "داخل المكان")
+                      _entryField(_tableEntryController, "رقم الطاولة..",
+                          Icons.table_restaurant,
+                          isNumber: true)
+                    else ...[
+                      _entryField(
+                          _phoneEntryController, "رقم الموبايل..", Icons.phone,
+                          isNumber: true),
+                      const SizedBox(height: 15),
+                      _entryField(_addressEntryController, "العنوان بالتفصيل..",
+                          Icons.location_on),
+                    ],
+
+                    const SizedBox(height: 25),
+                    _buildAnimatedButton(
+                      onPressed: _validateAndStart,
+                      child: const Text(
+                        "ابدأ تجربة الرفاهية ✨",
+                        style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18),
                       ),
                     ),
-                  ),
+                    TextButton(
+                        onPressed: () => setState(() => orderType = null),
+                        child: const Text("رجوع",
+                            style: TextStyle(color: Colors.white38))),
+                  ],
+
                   const SizedBox(height: 20),
                   TextButton.icon(
                     onPressed: _showWaiterLogin,
-                    icon: const Icon(
-                      Icons.lock_person,
-                      color: CafeTheme.primaryGold,
-                    ),
-                    label: const Text(
-                      "الدخول كويتر",
-                      style: TextStyle(
-                        color: CafeTheme.primaryGold,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    icon: const Icon(Icons.lock_person,
+                        color: CafeTheme.primaryGold),
+                    label: const Text("الدخول كويتر",
+                        style: TextStyle(
+                            color: CafeTheme.primaryGold,
+                            fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -666,6 +515,60 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  Widget _entryField(TextEditingController ctrl, String hint, IconData icon,
+      {bool isNumber = false}) {
+    return TextField(
+      controller: ctrl,
+      textAlign: TextAlign.center,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: Icon(icon, color: CafeTheme.primaryGold, size: 20),
+        filled: true,
+        fillColor: Colors.black.withOpacity(0.3),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide.none),
+      ),
+    );
+  }
+
+  void _validateAndStart() {
+    String name =
+        _hasSavedName ? registeredName! : _nameEntryController.text.trim();
+
+    if (name.isEmpty) {
+      _showStatusSnackBar("يرجى إدخال الاسم", Colors.redAccent);
+      return;
+    }
+
+    if (orderType == "داخل المكان") {
+      if (_tableEntryController.text.trim().isEmpty) {
+        _showStatusSnackBar("يرجى تحديد رقم الطاولة", Colors.redAccent);
+        return;
+      }
+      currentTable = _tableEntryController.text.trim();
+    } else {
+      if (_phoneEntryController.text.trim().isEmpty ||
+          _addressEntryController.text.trim().isEmpty) {
+        _showStatusSnackBar(
+            "يرجى إكمال بيانات العنوان والموبايل", Colors.redAccent);
+        return;
+      }
+      customerPhone = _phoneEntryController.text.trim();
+      customerAddress = _addressEntryController.text.trim();
+    }
+
+    if (kIsWeb) html.window.localStorage['customer_name'] = name;
+
+    setState(() {
+      registeredName = name;
+      _isEntryComplete = true;
+    });
+    _initStatusListeners();
   }
 
   Widget _buildAnimatedButton({
@@ -696,15 +599,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(20),
           ),
           elevation: 0,
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith<Color?>(
-            (Set<WidgetState> states) {
-              if (states.contains(WidgetState.pressed)) {
-                return Colors.black.withOpacity(0.1);
-              }
-              return null;
-            },
-          ),
         ),
         child: child,
       ),
@@ -808,7 +702,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
             ),
             if (registeredName != null)
               Text(
-                "طاولة $currentTable | $registeredName",
+                orderType == "دليفري"
+                    ? "طلب خارجي | $registeredName"
+                    : "طاولة $currentTable | $registeredName",
                 style: const TextStyle(fontSize: 10, color: Colors.white60),
               ),
             const SizedBox(height: 15),
@@ -816,39 +712,40 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
         ),
       ),
       actions: [
-        Padding(
-          padding: const EdgeInsets.only(left: 5, top: 15),
-          child: ScaleTransition(
-            scale: Tween(begin: 0.95, end: 1.05).animate(
-              CurvedAnimation(
-                parent: _changeTablePulseController,
-                curve: Curves.easeInOut,
+        if (orderType == "داخل المكان")
+          Padding(
+            padding: const EdgeInsets.only(left: 5, top: 15),
+            child: ScaleTransition(
+              scale: Tween(begin: 0.95, end: 1.05).animate(
+                CurvedAnimation(
+                  parent: _changeTablePulseController,
+                  curve: Curves.easeInOut,
+                ),
               ),
-            ),
-            child: GestureDetector(
-              onTap: _changeTableDialog,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(
-                    color: CafeTheme.primaryGold.withOpacity(0.4),
+              child: GestureDetector(
+                onTap: _changeTableDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
                   ),
-                ),
-                child: const Icon(
-                  Icons.sync_alt_rounded,
-                  color: CafeTheme.primaryGold,
-                  size: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: CafeTheme.primaryGold.withOpacity(0.4),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.sync_alt_rounded,
+                    color: CafeTheme.primaryGold,
+                    size: 16,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        _buildWaiterButton(),
+        if (orderType == "داخل المكان") _buildWaiterButton(),
       ],
     );
   }
@@ -1110,7 +1007,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
             var item = items[i].data() as Map<String, dynamic>;
             String? imgUrl = item['image_url'];
 
-            // نتحقق إذا كان الصنف له أحجام متعددة
             bool hasSizes =
                 item['sizes'] != null && (item['sizes'] as List).isNotEmpty;
 
@@ -1524,9 +1420,11 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
 
   void _sendOrder() async {
     if (basket.isEmpty || registeredName == null) return;
-    await FirebaseFirestore.instance.collection('orders').add({
+
+    // إعداد البيانات بناءً على نوع الطلب
+    Map<String, dynamic> orderData = {
       'customer_name': registeredName,
-      'table_number': currentTable,
+      'order_type': orderType, // إضافة نوع الطلب
       'items_with_qty':
           basket.map((e) => {'name': e['name'], 'qty': e['quantity']}).toList(),
       'note': basket.any((e) => e['note'] != "بدون إضافات")
@@ -1540,7 +1438,18 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
       ),
       'timestamp': FieldValue.serverTimestamp(),
       'status': 'قيد الانتظار',
-    });
+    };
+
+    // إضافة البيانات الخاصة بكل نوع
+    if (orderType == "داخل المكان") {
+      orderData['table_number'] = currentTable;
+    } else {
+      orderData['phone'] = customerPhone;
+      orderData['address'] = customerAddress;
+    }
+
+    await FirebaseFirestore.instance.collection('orders').add(orderData);
+
     setState(() => basket.clear());
     _showStatusSnackBar("تم إرسال طلبك! 🚀", Colors.greenAccent);
   }
@@ -1569,6 +1478,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(o) => true;
 }
 
+// كود صفحة الويتر لم يتغير (سيظل يعمل كما هو لاستقبال الأوردرات)
 class WaiterTerminal extends StatefulWidget {
   const WaiterTerminal({super.key});
 
@@ -1577,7 +1487,7 @@ class WaiterTerminal extends StatefulWidget {
 }
 
 class _WaiterTerminalState extends State<WaiterTerminal> {
-  int _currentTabIndex = 0; // State variable for Navigation Bar
+  int _currentTabIndex = 0;
 
   final List<Map<String, dynamic>> waiterBasket = [];
   final tableCtrl = TextEditingController();
@@ -1640,7 +1550,6 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
   void _showWaiterAddDialog(Map<String, dynamic> item) {
     noteCtrl.clear();
 
-    // Size logic integration for Waiter
     List<dynamic>? sizes = item['sizes'];
     Map<String, dynamic>? selectedSize;
     double currentPrice = (item['price'] as num).toDouble();
@@ -1829,10 +1738,8 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
     );
   }
 
-  // --- شاشة عرض وإدارة الطلبات للويتر (محدثة للإخفاء التلقائي) ---
   Widget _buildOrdersManagementView() {
     return StreamBuilder<QuerySnapshot>(
-      // التعديل هنا: بنعرض فقط الأوردرات اللي حالتها مش "تم الحساب" ومش "ملغي"
       stream: FirebaseFirestore.instance
           .collection('orders')
           .where('status', whereNotIn: ['تم الحساب', 'ملغي']).snapshots(),
@@ -1847,14 +1754,13 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
 
         var orders = snapshot.data!.docs;
 
-        // ترتيب يدوي حسب الوقت لأن whereNotIn أحياناً تمنع orderBy في بعض إعدادات Firestore
         orders.sort((a, b) {
           var t1 =
               (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
           var t2 =
               (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
           if (t1 == null || t2 == null) return 0;
-          return t2.compareTo(t1); // الأحدث فوق
+          return t2.compareTo(t1);
         });
 
         if (orders.isEmpty) {
@@ -1873,6 +1779,7 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
             var doc = orders[index];
             var data = doc.data() as Map<String, dynamic>;
             List items = data['items_with_qty'] ?? [];
+            String type = data['order_type'] ?? "داخل المكان";
 
             Color statusColor = Colors.white70;
             switch (data['status']) {
@@ -1900,12 +1807,16 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "طاولة: ${data['table_number']} | ${data['customer_name']}",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: CafeTheme.primaryGold,
+                      Expanded(
+                        child: Text(
+                          type == "دليفري"
+                              ? "🚗 دليفري | ${data['customer_name']}"
+                              : "طاولة: ${data['table_number']} | ${data['customer_name']}",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: CafeTheme.primaryGold,
+                          ),
                         ),
                       ),
                       Container(
@@ -1948,13 +1859,11 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                             onChanged: (val) async {
                               if (val != null) {
                                 if (val == 'تم الحساب') {
-                                  // هنا هنمسح الدوكومنت خالص من الفايربيز
                                   await doc.reference.delete();
                                   _showSnack(
                                       "تم تحصيل الحساب وحذف الطلب نهائياً ✅",
                                       Colors.redAccent);
                                 } else {
-                                  // لو اختار أي حالة تانية (جاهز، جاري التجهيز...) يحدث الحالة عادي
                                   doc.reference.update({'status': val});
                                 }
                               }
@@ -1964,6 +1873,15 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                       ),
                     ],
                   ),
+                  if (type == "دليفري") ...[
+                    const SizedBox(height: 5),
+                    Text("📞 ${data['phone']}",
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 13)),
+                    Text("📍 ${data['address']}",
+                        style: const TextStyle(
+                            color: Colors.white60, fontSize: 12)),
+                  ],
                   const Divider(color: Colors.white24, height: 20),
                   ...items.map((item) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -2005,7 +1923,6 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
     );
   }
 
-  // --- شاشة نقطة البيع (POS) ---
   Widget _buildPOSView() {
     return Row(
       children: [
@@ -2190,7 +2107,6 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                       itemCount: items.length,
                       itemBuilder: (context, index) {
                         var prod = items[index];
-                        // نتحقق إذا كان الصنف له أحجام متعددة
                         bool hasSizes = prod['sizes'] != null &&
                             (prod['sizes'] as List).isNotEmpty;
 
