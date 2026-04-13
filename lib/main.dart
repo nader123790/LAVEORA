@@ -7,6 +7,27 @@ import 'dart:js' as js;
 import 'dart:html' as html;
 
 import 'firebase_options.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+Future<void> sendTelegramMessage(String message) async {
+  try {
+    var url = Uri.parse(
+      "https://onesignal-server-nine.vercel.app/api/telegram",
+    );
+
+    var response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"message": message}),
+    );
+
+    print("Telegram Status: ${response.statusCode}");
+    print("Telegram Response: ${response.body}");
+  } catch (e) {
+    print("Telegram Error: $e");
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -1449,7 +1470,14 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     }
 
     await FirebaseFirestore.instance.collection('orders').add(orderData);
+    print("✅ Order saved to Firestore");
+    print("📌 registeredName = $registeredName");
+    print("📌 currentTable = $currentTable");
 
+    await sendTelegramMessage(
+        "🚀 طلب جديد من $registeredName - طاولة $currentTable");
+
+    print("✅ Telegram function executed");
     setState(() => basket.clear());
     _showStatusSnackBar("تم إرسال طلبك! 🚀", Colors.greenAccent);
   }
@@ -1462,6 +1490,8 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
       'table_number': currentTable,
       'timestamp': FieldValue.serverTimestamp(),
     });
+    await sendTelegramMessage(
+        "🔔 نداء ويتر من طاولة $currentTable - العميل: $registeredName");
   }
 }
 
