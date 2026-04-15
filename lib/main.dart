@@ -100,6 +100,7 @@ class MenuPage extends StatefulWidget {
 
 class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   String? currentCat;
+  final TextEditingController _catSearchCtrl = TextEditingController();
   List<Map<String, dynamic>> basket = [];
   String? registeredName;
   String? currentTable;
@@ -150,6 +151,135 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     _devPulseController.dispose();
     _changeTablePulseController.dispose();
     super.dispose();
+  }
+
+  void _showCategoriesSheet(List<QueryDocumentSnapshot> cats) {
+    _catSearchCtrl.clear();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF111111),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setSheetState) {
+          List<QueryDocumentSnapshot> filteredCats = cats;
+
+          String q = _catSearchCtrl.text.trim();
+          if (q.isNotEmpty) {
+            filteredCats = cats.where((doc) {
+              String name = (doc['name'] ?? "").toString();
+              return name.contains(q);
+            }).toList();
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 15,
+              right: 15,
+              top: 15,
+            ),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.75,
+              child: Column(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  const Text(
+                    "اختر القسم",
+                    style: TextStyle(
+                      color: CafeTheme.primaryGold,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  TextField(
+                    controller: _catSearchCtrl,
+                    onChanged: (_) => setSheetState(() {}),
+                    decoration: InputDecoration(
+                      hintText: "ابحث عن قسم...",
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      prefixIcon: const Icon(Icons.search,
+                          color: CafeTheme.primaryGold),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.05),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Expanded(
+                    child: GridView.builder(
+                      itemCount: filteredCats.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 2.8,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemBuilder: (context, i) {
+                        String catName =
+                            (filteredCats[i]['name'] ?? "").toString();
+                        bool selected = currentCat == catName;
+
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () {
+                            setState(() => currentCat = catName);
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? CafeTheme.primaryGold
+                                  : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: selected
+                                    ? CafeTheme.primaryGold
+                                    : Colors.white10,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                catName,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: selected ? Colors.black : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
   }
 
   void _checkSavedData() {
@@ -944,7 +1074,10 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
 
   Widget _buildCategoryBar() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('categories').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('categories')
+          .orderBy('index')
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const SliverToBoxAdapter(child: SizedBox());
@@ -958,48 +1091,84 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
           delegate: _HeaderDelegate(
             child: Container(
               color: Colors.black.withOpacity(0.9),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: cats.length,
-                itemBuilder: (c, i) {
-                  bool isSelected = currentCat == cats[i]['name'];
-                  return GestureDetector(
-                    onTap: () => setState(() => currentCat = cats[i]['name']),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 400),
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 15,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: isSelected
-                            ? const LinearGradient(
-                                colors: [Color(0xFFD4AF37), Color(0xFFB8860B)],
-                              )
-                            : null,
-                        color:
-                            isSelected ? null : Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Center(
-                        child: Text(
-                          cats[i]['name'] ?? "",
-                          style: TextStyle(
-                            color: isSelected ? Colors.black : Colors.white70,
-                            fontWeight: isSelected
-                                ? FontWeight.w900
-                                : FontWeight.normal,
-                          ),
+              child: Row(
+                children: [
+                  // زرار كل الأقسام
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: CafeTheme.primaryGold,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
                         ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 12),
+                      ),
+                      onPressed: () => _showCategoriesSheet(cats),
+                      icon: const Icon(Icons.grid_view_rounded, size: 18),
+                      label: const Text(
+                        "كل الأقسام",
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
-                  );
-                },
+                  ),
+
+                  // شريط الأقسام العادي
+                  Expanded(
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: cats.length,
+                      itemBuilder: (c, i) {
+                        bool isSelected = currentCat == cats[i]['name'];
+                        return GestureDetector(
+                          onTap: () =>
+                              setState(() => currentCat = cats[i]['name']),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 400),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 15,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 30,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: isSelected
+                                  ? const LinearGradient(
+                                      colors: [
+                                        Color(0xFFD4AF37),
+                                        Color(0xFFB8860B)
+                                      ],
+                                    )
+                                  : null,
+                              color: isSelected
+                                  ? null
+                                  : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Center(
+                              child: Text(
+                                cats[i]['name'] ?? "",
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.black
+                                      : Colors.white70,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w900
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1978,6 +2147,7 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('categories')
+                      .orderBy('index')
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox();
