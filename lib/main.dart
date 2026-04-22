@@ -15,13 +15,11 @@ Future<void> sendTelegramMessage(String message) async {
     var url = Uri.parse(
       "https://onesignal-server-nine.vercel.app/api/telegram",
     );
-
     var response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"message": message}),
     );
-
     print("Telegram Status: ${response.statusCode}");
     print("Telegram Response: ${response.body}");
   } catch (e) {
@@ -73,8 +71,7 @@ class LaveoraLuxuryApp extends StatelessWidget {
           onSurface: Colors.white,
         ),
       ),
-      home:
-          const MenuPage(), // الانتقال مباشرة للمنيو (التي ستحتوي على اختيار النوع)
+      home: const MenuPage(),
     );
   }
 }
@@ -91,6 +88,9 @@ Widget buildLaveoraLogo({double size = 60, Color? color}) {
   );
 }
 
+// ==========================================
+// صفحة المنيو الرئيسية
+// ==========================================
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
 
@@ -105,11 +105,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   String? registeredName;
   String? currentTable;
 
-  // متغيرات جديدة للدليفري
-  String? orderType; // 'داخل المكان' أو 'دليفري'
-  String? customerPhone;
-  String? customerAddress;
-
   bool _isEntryComplete = false;
   bool _hasSavedName = false;
   bool _isWaiterAlertActive = false;
@@ -121,8 +116,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   final TextEditingController _noteController = TextEditingController();
   final TextEditingController _nameEntryController = TextEditingController();
   final TextEditingController _tableEntryController = TextEditingController();
-  final TextEditingController _phoneEntryController = TextEditingController();
-  final TextEditingController _addressEntryController = TextEditingController();
 
   @override
   void initState() {
@@ -308,9 +301,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
       _playSound("https://files.catbox.moe/ct6wzl.mp3");
   void _playMicrowaveDone() =>
       _playSound("https://files.catbox.moe/hecpqn.mp3");
-  void _playWaiterBell() => _playSound(
-        "https://files.catbox.moe/y77se9.mp3",
-      );
+  void _playWaiterBell() => _playSound("https://files.catbox.moe/y77se9.mp3");
 
   void _initStatusListeners() {
     if (registeredName == null) return;
@@ -414,30 +405,17 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(height: 25),
+              _devLink(Icons.chat_bubble_outline, "WhatsApp", Colors.green,
+                  "https://wa.me/qr/QS4SMJ54AKJMF1"),
+              _devLink(Icons.facebook_outlined, "Facebook", Colors.blueAccent,
+                  "https://www.facebook.com/share/1ByWx21qNW/"),
               _devLink(
-                Icons.chat_bubble_outline,
-                "WhatsApp",
-                Colors.green,
-                "https://wa.me/qr/QS4SMJ54AKJMF1",
-              ),
-              _devLink(
-                Icons.facebook_outlined,
-                "Facebook",
-                Colors.blueAccent,
-                "https://www.facebook.com/share/1ByWx21qNW/",
-              ),
-              _devLink(
-                Icons.camera_alt_outlined,
-                "Instagram",
-                Colors.pinkAccent,
-                "https://www.instagram.com/nadersoltan294?igsh=bDB5eTB3Z2NrMmF6",
-              ),
-              _devLink(
-                Icons.video_collection_outlined,
-                "TikTok",
-                Colors.white,
-                "https://www.tiktok.com/@nadersoltan6?_r=1&_t=ZS-93Uf8vOauIB",
-              ),
+                  Icons.camera_alt_outlined,
+                  "Instagram",
+                  Colors.pinkAccent,
+                  "https://www.instagram.com/nadersoltan294?igsh=bDB5eTB3Z2NrMmF6"),
+              _devLink(Icons.video_collection_outlined, "TikTok", Colors.white,
+                  "https://www.tiktok.com/@nadersoltan6?_r=1&_t=ZS-93Uf8vOauIB"),
               const Divider(color: Colors.white10, height: 30),
               const Text(
                 "Call: 01012078944",
@@ -453,87 +431,80 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _devLink(IconData icon, String label, Color color, String url) =>
-      ListTile(
-        leading: Icon(icon, color: color),
-        title: Text(label, style: const TextStyle(fontSize: 14)),
-        onTap: () => _openUrl(url),
-        trailing: const Icon(
-          Icons.open_in_new,
-          size: 14,
-          color: Colors.white24,
-        ),
-      );
+  Widget _devLink(IconData icon, String label, Color color, String url) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+      onTap: () => _openUrl(url),
+    );
+  }
 
   void _showWaiterLogin() {
-    TextEditingController passwordCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF151515),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-            side: const BorderSide(color: CafeTheme.primaryGold),
-          ),
-          title: const Text(
-            'دخول الويتر 🤵',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: CafeTheme.primaryGold),
-          ),
-          content: TextField(
-            controller: passwordCtrl,
-            obscureText: true,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'أدخل كلمة السر',
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: CafeTheme.primaryGold,
-              ),
-              onPressed: () {
-                if (passwordCtrl.text == "1234") {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const WaiterTerminal(),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('كلمة السر خاطئة!'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              child: const Text(
-                'دخول',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF151515),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
+          side: const BorderSide(color: CafeTheme.primaryGold, width: 0.5),
         ),
+        title: const Text(
+          'دخول الويتر 🤵',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: CafeTheme.primaryGold),
+        ),
+        content: TextField(
+          controller: passwordCtrl,
+          obscureText: true,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'أدخل كلمة السر',
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.05),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: CafeTheme.primaryGold,
+            ),
+            onPressed: () {
+              if (passwordCtrl.text == "1234") {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WaiterTerminal(),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('كلمة السر خاطئة!'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'دخول',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -553,6 +524,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     );
   }
 
+  // ==========================================
+  // شاشة الدخول - داخل المكان فقط
+  // ==========================================
   Widget _buildEntryOverlay() {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
@@ -584,80 +558,60 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                       letterSpacing: 5,
                     ),
                   ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    "مرحباً بك في تجربة الرفاهية ✨",
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
                   const SizedBox(height: 30),
 
-                  // نظام اختيار نوع الطلب الجديد
-                  if (orderType == null) ...[
-                    const Text("اختر مكان تواجدك الآن ✨",
-                        style: TextStyle(color: Colors.white70)),
-                    const SizedBox(height: 20),
-                    _buildAnimatedButton(
-                      onPressed: () =>
-                          setState(() => orderType = "داخل المكان"),
-                      child: const Text("أنا داخل الكافيه ☕",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                  // حقل الاسم
+                  if (!_hasSavedName) ...[
+                    _entryField(
+                      _nameEntryController,
+                      "اسمك الكريم..",
+                      Icons.person_outline_rounded,
                     ),
                     const SizedBox(height: 15),
-                    _buildAnimatedButton(
-                      color: Colors.white12,
-                      onPressed: () => setState(() => orderType = "دليفري"),
-                      child: const Text("أطلب دليفري 🚗",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ] else ...[
-                    // الحقول بناءً على الاختيار
-                    const Text("بيانات الاستلام",
-                        style: TextStyle(
-                            color: CafeTheme.primaryGold,
-                            fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 20),
-                    if (!_hasSavedName)
-                      _entryField(
-                          _nameEntryController, "الاسم الكريم..", Icons.person),
-
-                    const SizedBox(height: 15),
-
-                    if (orderType == "داخل المكان")
-                      _entryField(_tableEntryController, "رقم الطاولة..",
-                          Icons.table_restaurant,
-                          isNumber: true)
-                    else ...[
-                      _entryField(
-                          _phoneEntryController, "رقم الموبايل..", Icons.phone,
-                          isNumber: true),
-                      const SizedBox(height: 15),
-                      _entryField(_addressEntryController, "العنوان بالتفصيل..",
-                          Icons.location_on),
-                    ],
-
-                    const SizedBox(height: 25),
-                    _buildAnimatedButton(
-                      onPressed: _validateAndStart,
-                      child: const Text(
-                        "ابدأ تجربة الرفاهية ✨",
-                        style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18),
-                      ),
-                    ),
-                    TextButton(
-                        onPressed: () => setState(() => orderType = null),
-                        child: const Text("رجوع",
-                            style: TextStyle(color: Colors.white38))),
                   ],
 
-                  const SizedBox(height: 20),
+                  // حقل رقم الطاولة
+                  _entryField(
+                    _tableEntryController,
+                    "رقم الطاولة..",
+                    Icons.table_restaurant_rounded,
+                    isNumber: true,
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  // زرار البداية
+                  _buildAnimatedButton(
+                    onPressed: _validateAndStart,
+                    child: const Text(
+                      "ابدأ تجربة الرفاهية ✨",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // زرار تسجيل الدخول كويتر
                   TextButton.icon(
                     onPressed: _showWaiterLogin,
                     icon: const Icon(Icons.lock_person,
-                        color: CafeTheme.primaryGold),
-                    label: const Text("الدخول كويتر",
-                        style: TextStyle(
-                            color: CafeTheme.primaryGold,
-                            fontWeight: FontWeight.bold)),
+                        color: CafeTheme.primaryGold, size: 18),
+                    label: const Text(
+                      "الدخول كويتر",
+                      style: TextStyle(
+                        color: CafeTheme.primaryGold,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -668,8 +622,12 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _entryField(TextEditingController ctrl, String hint, IconData icon,
-      {bool isNumber = false}) {
+  Widget _entryField(
+    TextEditingController ctrl,
+    String hint,
+    IconData icon, {
+    bool isNumber = false,
+  }) {
     return TextField(
       controller: ctrl,
       textAlign: TextAlign.center,
@@ -681,8 +639,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
         filled: true,
         fillColor: Colors.black.withOpacity(0.3),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none),
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }
@@ -696,22 +655,12 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
       return;
     }
 
-    if (orderType == "داخل المكان") {
-      if (_tableEntryController.text.trim().isEmpty) {
-        _showStatusSnackBar("يرجى تحديد رقم الطاولة", Colors.redAccent);
-        return;
-      }
-      currentTable = _tableEntryController.text.trim();
-    } else {
-      if (_phoneEntryController.text.trim().isEmpty ||
-          _addressEntryController.text.trim().isEmpty) {
-        _showStatusSnackBar(
-            "يرجى إكمال بيانات العنوان والموبايل", Colors.redAccent);
-        return;
-      }
-      customerPhone = _phoneEntryController.text.trim();
-      customerAddress = _addressEntryController.text.trim();
+    if (_tableEntryController.text.trim().isEmpty) {
+      _showStatusSnackBar("يرجى تحديد رقم الطاولة", Colors.redAccent);
+      return;
     }
+
+    currentTable = _tableEntryController.text.trim();
 
     if (kIsWeb) html.window.localStorage['customer_name'] = name;
 
@@ -853,9 +802,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
             ),
             if (registeredName != null)
               Text(
-                orderType == "دليفري"
-                    ? "طلب خارجي | $registeredName"
-                    : "طاولة $currentTable | $registeredName",
+                "طاولة $currentTable | $registeredName",
                 style: const TextStyle(fontSize: 10, color: Colors.white60),
               ),
             const SizedBox(height: 15),
@@ -863,40 +810,40 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
         ),
       ),
       actions: [
-        if (orderType == "داخل المكان")
-          Padding(
-            padding: const EdgeInsets.only(left: 5, top: 15),
-            child: ScaleTransition(
-              scale: Tween(begin: 0.95, end: 1.05).animate(
-                CurvedAnimation(
-                  parent: _changeTablePulseController,
-                  curve: Curves.easeInOut,
-                ),
+        // زرار تغيير الطاولة
+        Padding(
+          padding: const EdgeInsets.only(left: 5, top: 15),
+          child: ScaleTransition(
+            scale: Tween(begin: 0.95, end: 1.05).animate(
+              CurvedAnimation(
+                parent: _changeTablePulseController,
+                curve: Curves.easeInOut,
               ),
-              child: GestureDetector(
-                onTap: _changeTableDialog,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+            ),
+            child: GestureDetector(
+              onTap: _changeTableDialog,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: CafeTheme.primaryGold.withOpacity(0.4),
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(
-                      color: CafeTheme.primaryGold.withOpacity(0.4),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.sync_alt_rounded,
-                    color: CafeTheme.primaryGold,
-                    size: 16,
-                  ),
+                ),
+                child: const Icon(
+                  Icons.sync_alt_rounded,
+                  color: CafeTheme.primaryGold,
+                  size: 16,
                 ),
               ),
             ),
           ),
-        if (orderType == "داخل المكان") _buildWaiterButton(),
+        ),
+        _buildWaiterButton(),
       ],
     );
   }
@@ -940,6 +887,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
               if (_tableEntryController.text.isNotEmpty) {
                 setState(() => currentTable = _tableEntryController.text);
                 Navigator.pop(context);
+                _showStatusSnackBar(
+                    "تم تغيير الطاولة إلى ${_tableEntryController.text} 🪑",
+                    CafeTheme.primaryGold);
               }
             },
             child: const Text(
@@ -1093,7 +1043,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
               color: Colors.black.withOpacity(0.9),
               child: Row(
                 children: [
-                  // زرار كل الأقسام
                   Padding(
                     padding: const EdgeInsets.only(right: 12),
                     child: ElevatedButton.icon(
@@ -1114,8 +1063,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-
-                  // شريط الأقسام العادي
                   Expanded(
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
@@ -1196,7 +1143,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
           delegate: SliverChildBuilderDelegate((c, i) {
             var item = items[i].data() as Map<String, dynamic>;
             String? imgUrl = item['image_url'];
-
             bool hasSizes =
                 item['sizes'] != null && (item['sizes'] as List).isNotEmpty;
 
@@ -1423,6 +1369,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     );
   }
 
+  // ==========================================
+  // ميزة جديدة: تتبع الطلبات النشطة مع التصميم المحسّن
+  // ==========================================
   Widget _buildActiveOrdersTracker() {
     if (registeredName == null) return const SizedBox();
     return StreamBuilder<QuerySnapshot>(
@@ -1449,6 +1398,14 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                   : (status == "جاري التجهيز"
                       ? Colors.orangeAccent
                       : Colors.white38);
+
+              // أيقونة الحالة
+              IconData statusIcon = status == "جاهز"
+                  ? Icons.check_circle_rounded
+                  : (status == "جاري التجهيز"
+                      ? Icons.local_cafe_rounded
+                      : Icons.hourglass_top_rounded);
+
               return Container(
                 width: 170,
                 margin: const EdgeInsets.all(8),
@@ -1460,11 +1417,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      status == "جاهز" ? Icons.check_circle : Icons.timer,
-                      color: sColor,
-                      size: 30,
-                    ),
+                    Icon(statusIcon, color: sColor, size: 30),
                     const SizedBox(height: 8),
                     Text(
                       status,
@@ -1473,6 +1426,16 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    // ميزة جديدة: عرض عدد الأصناف
+                    if (data['items_with_qty'] != null)
+                      Text(
+                        "${(data['items_with_qty'] as List).length} صنف",
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                        ),
+                      ),
                   ],
                 ),
               );
@@ -1586,22 +1549,47 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                   color: CafeTheme.primaryGold,
                 ),
               ),
+              // ميزة جديدة: عرض عدد الأصناف في السلة
+              if (basket.isNotEmpty)
+                Text(
+                  "${basket.length} صنف في السلة",
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+                ),
             ],
           ),
-          ElevatedButton(
-            onPressed: basket.isEmpty ? null : _sendOrder,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CafeTheme.primaryGold,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+          Column(
+            children: [
+              ElevatedButton(
+                onPressed: basket.isEmpty ? null : _sendOrder,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CafeTheme.primaryGold,
+                  foregroundColor: Colors.black,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text(
+                  "تأكيد الطلب ⚡",
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                ),
               ),
-            ),
-            child: const Text(
-              "تأكيد الطلب ⚡",
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-            ),
+              // ميزة جديدة: زرار مسح السلة
+              if (basket.isNotEmpty)
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() => basket.clear());
+                    _showStatusSnackBar("تم مسح السلة", Colors.redAccent);
+                  },
+                  icon: const Icon(Icons.delete_outline,
+                      color: Colors.redAccent, size: 16),
+                  label: const Text(
+                    "مسح السلة",
+                    style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -1611,10 +1599,10 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   void _sendOrder() async {
     if (basket.isEmpty || registeredName == null) return;
 
-    // إعداد البيانات بناءً على نوع الطلب
     Map<String, dynamic> orderData = {
       'customer_name': registeredName,
-      'order_type': orderType, // إضافة نوع الطلب
+      'order_type': 'داخل المكان',
+      'table_number': currentTable,
       'items_with_qty':
           basket.map((e) => {'name': e['name'], 'qty': e['quantity']}).toList(),
       'note': basket.any((e) => e['note'] != "بدون إضافات")
@@ -1630,24 +1618,14 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
       'status': 'قيد الانتظار',
     };
 
-    // إضافة البيانات الخاصة بكل نوع
-    if (orderType == "داخل المكان") {
-      orderData['table_number'] = currentTable;
-    } else {
-      orderData['phone'] = customerPhone;
-      orderData['address'] = customerAddress;
-    }
-
     await FirebaseFirestore.instance.collection('orders').add(orderData);
-    print("✅ Order saved to Firestore");
-    print("📌 registeredName = $registeredName");
-    print("📌 currentTable = $currentTable");
 
     await sendTelegramMessage(
         "🚀 طلب جديد من $registeredName - طاولة $currentTable");
 
-    print("✅ Telegram function executed");
-    setState(() => basket.clear());
+    setState(() {
+      basket.clear();
+    });
     _showStatusSnackBar("تم إرسال طلبك! 🚀", Colors.greenAccent);
   }
 
@@ -1677,7 +1655,9 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(o) => true;
 }
 
-// كود صفحة الويتر لم يتغير (سيظل يعمل كما هو لاستقبال الأوردرات)
+// ==========================================
+// صفحة الويتر
+// ==========================================
 class WaiterTerminal extends StatefulWidget {
   const WaiterTerminal({super.key});
 
@@ -1898,42 +1878,257 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
         notesList.add("${item['name']}: ${item['note']}");
       }
     }
-    String finalNote = notesList.isEmpty
-        ? "طلب يدوي من الويتر"
-        : "طلب ويتر: ${notesList.join('، ')}";
 
-    try {
-      await FirebaseFirestore.instance.collection('orders').add({
-        'customer_name': nameCtrl.text.isEmpty ? "طلب ويتر" : nameCtrl.text,
-        'table_number': tableCtrl.text,
-        'items_with_qty': waiterBasket
-            .map((e) => {'name': e['name'], 'qty': e['qty']})
-            .toList(),
-        'note': finalNote,
-        'total_price': total,
-        'timestamp': FieldValue.serverTimestamp(),
-        'status': 'قيد الانتظار',
-      });
+    String notesStr =
+        notesList.isEmpty ? "بدون ملاحظات" : notesList.join(" | ");
+    String customerName = nameCtrl.text.isEmpty ? "عميل" : nameCtrl.text;
 
-      setState(() {
-        waiterBasket.clear();
-        tableCtrl.clear();
-        nameCtrl.clear();
-      });
+    await FirebaseFirestore.instance.collection('orders').add({
+      'customer_name': customerName,
+      'order_type': 'داخل المكان',
+      'table_number': tableCtrl.text,
+      'items_with_qty': waiterBasket
+          .map((e) => {'name': e['name'], 'qty': e['qty']})
+          .toList(),
+      'note': notesStr,
+      'total_price': total,
+      'timestamp': FieldValue.serverTimestamp(),
+      'status': 'قيد الانتظار',
+      'source': 'waiter',
+    });
 
-      _showSnack("تم إرسال الطلب للباريستا 🚀", Colors.blue);
-    } catch (e) {
-      _showSnack("خطأ في الإرسال: $e", Colors.red);
-    }
+    await sendTelegramMessage(
+        "🤵 ويتر أضاف طلب - طاولة ${tableCtrl.text} - $customerName");
+
+    setState(() => waiterBasket.clear());
+    _showSnack("تم الإرسال للباريستا ✅", Colors.green);
   }
 
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(msg,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.black)),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
+    );
+  }
+
+  Widget _buildPOSView() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: tableCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: "رقم الطاولة",
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    prefixIcon: const Icon(Icons.table_restaurant,
+                        color: CafeTheme.primaryGold),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: nameCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: "اسم العميل",
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    prefixIcon:
+                        const Icon(Icons.person, color: CafeTheme.primaryGold),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: searchCtrl,
+                  onChanged: (v) => setState(() => searchQuery = v),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: "ابحث عن منتج...",
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    prefixIcon:
+                        const Icon(Icons.search, color: CafeTheme.primaryGold),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('categories')
+              .orderBy('index')
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const SizedBox();
+            var cats = snapshot.data!.docs;
+            return SizedBox(
+              height: 45,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: cats.length,
+                itemBuilder: (c, i) {
+                  bool isSelected = selectedCategory == cats[i]['name'];
+                  return GestureDetector(
+                    onTap: () =>
+                        setState(() => selectedCategory = cats[i]['name']),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? CafeTheme.primaryGold
+                            : Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        cats[i]['name'] ?? "",
+                        style: TextStyle(
+                          color: isSelected ? Colors.black : Colors.white70,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('products')
+                .where('cat', isEqualTo: selectedCategory)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(
+                  child:
+                      CircularProgressIndicator(color: CafeTheme.primaryGold),
+                );
+              }
+              var prods = snapshot.data!.docs.where((doc) {
+                var data = doc.data() as Map<String, dynamic>;
+                return searchQuery.isEmpty ||
+                    (data['name'] ?? "").toString().contains(searchQuery);
+              }).toList();
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(12),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemCount: prods.length,
+                itemBuilder: (c, i) {
+                  var prod = prods[i].data() as Map<String, dynamic>;
+                  bool hasSizes = prod['sizes'] != null &&
+                      (prod['sizes'] as List).isNotEmpty;
+                  String? imgUrl = prod['image_url'];
+
+                  return GestureDetector(
+                    onTap: () => _showWaiterAddDialog(prod),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: (imgUrl != null && imgUrl.isNotEmpty)
+                                ? Image.network(imgUrl,
+                                    width: 55, height: 55, fit: BoxFit.cover)
+                                : const Icon(Icons.fastfood,
+                                    color: CafeTheme.primaryGold, size: 40),
+                          ),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: Text(
+                              prod['name'],
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            hasSizes ? "أحجام مختلفة" : "${prod['price']} ج.م",
+                            style: TextStyle(
+                              color: hasSizes
+                                  ? Colors.orangeAccent
+                                  : CafeTheme.primaryGold,
+                              fontWeight: FontWeight.bold,
+                              fontSize: hasSizes ? 11 : 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        if (waiterBasket.isNotEmpty) _buildBasketSummary(),
+      ],
     );
   }
 
@@ -1941,64 +2136,41 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('orders')
-          .where('status', whereNotIn: ['تم الحساب', 'ملغي']).snapshots(),
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text("حدث خطأ في تحميل البيانات"));
-        }
         if (!snapshot.hasData) {
           return const Center(
               child: CircularProgressIndicator(color: CafeTheme.primaryGold));
         }
-
         var orders = snapshot.data!.docs;
-
-        orders.sort((a, b) {
-          var t1 =
-              (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-          var t2 =
-              (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-          if (t1 == null || t2 == null) return 0;
-          return t2.compareTo(t1);
-        });
-
         if (orders.isEmpty) {
           return const Center(
             child: Text(
-              "لا توجد طلبات نشطة حالياً ✨",
-              style: TextStyle(color: Colors.white54, fontSize: 18),
+              "لا توجد طلبات حالياً",
+              style: TextStyle(color: Colors.white54),
             ),
           );
         }
-
         return ListView.builder(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(12),
           itemCount: orders.length,
-          itemBuilder: (context, index) {
-            var doc = orders[index];
-            var data = doc.data() as Map<String, dynamic>;
-            List items = data['items_with_qty'] ?? [];
-            String type = data['order_type'] ?? "داخل المكان";
-
-            Color statusColor = Colors.white70;
-            switch (data['status']) {
-              case 'جاهز':
-                statusColor = Colors.greenAccent;
-                break;
-              case 'جاري التجهيز':
-                statusColor = Colors.orangeAccent;
-                break;
-              default:
-                statusColor = Colors.white70;
-            }
+          itemBuilder: (c, i) {
+            var data = orders[i].data() as Map<String, dynamic>;
+            String status = data['status'] ?? "قيد الانتظار";
+            Color sColor = status == "جاهز"
+                ? Colors.greenAccent
+                : (status == "جاري التجهيز"
+                    ? Colors.orangeAccent
+                    : Colors.white38);
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 15),
+              margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: statusColor.withOpacity(0.5)),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: sColor.withOpacity(0.3), width: 1.5),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2006,112 +2178,63 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Text(
-                          type == "دليفري"
-                              ? "🚗 دليفري | ${data['customer_name']}"
-                              : "طاولة: ${data['table_number']} | ${data['customer_name']}",
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: CafeTheme.primaryGold,
-                          ),
+                      Text(
+                        "طاولة ${data['table_number'] ?? '?'}",
+                        style: const TextStyle(
+                          color: CafeTheme.primaryGold,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border:
-                              Border.all(color: statusColor.withOpacity(0.3)),
+                          color: sColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: sColor.withOpacity(0.5)),
                         ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: [
-                              'قيد الانتظار',
-                              'جاري التجهيز',
-                              'جاهز',
-                              'تم الحساب',
-                              'ملغي'
-                            ].contains(data['status'])
-                                ? data['status']
-                                : 'قيد الانتظار',
-                            icon:
-                                Icon(Icons.arrow_drop_down, color: statusColor),
-                            dropdownColor: const Color(0xFF151515),
-                            style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            items: [
-                              'قيد الانتظار',
-                              'جاري التجهيز',
-                              'جاهز',
-                              'تم الحساب',
-                              'ملغي'
-                            ]
-                                .map((s) =>
-                                    DropdownMenuItem(value: s, child: Text(s)))
-                                .toList(),
-                            onChanged: (val) async {
-                              if (val != null) {
-                                if (val == 'تم الحساب') {
-                                  await doc.reference.delete();
-                                  _showSnack(
-                                      "تم تحصيل الحساب وحذف الطلب نهائياً ✅",
-                                      Colors.redAccent);
-                                } else {
-                                  doc.reference.update({'status': val});
-                                }
-                              }
-                            },
+                        child: Text(
+                          status,
+                          style: TextStyle(
+                            color: sColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  if (type == "دليفري") ...[
-                    const SizedBox(height: 5),
-                    Text("📞 ${data['phone']}",
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 13)),
-                    Text("📍 ${data['address']}",
-                        style: const TextStyle(
-                            color: Colors.white60, fontSize: 12)),
-                  ],
-                  const Divider(color: Colors.white24, height: 20),
-                  ...items.map((item) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Text("${item['qty']}x ",
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold)),
-                            Expanded(
-                                child: Text("${item['name']}",
-                                    style: const TextStyle(
-                                        color: Colors.white70))),
-                          ],
-                        ),
-                      )),
-                  if (data['note'] != null &&
-                      data['note'] != "بدون إضافات") ...[
-                    const SizedBox(height: 8),
-                    Text("📝 ملاحظات: ${data['note']}",
-                        style: const TextStyle(
-                            color: Colors.orangeAccent, fontSize: 12)),
-                  ],
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
-                    "الإجمالي: ${data['total_price']} ج.م",
-                    style: const TextStyle(
-                      color: Colors.greenAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    data['customer_name'] ?? "",
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 8),
+                  // أزرار تغيير الحالة
+                  Row(
+                    children: [
+                      _statusButton(
+                        "قيد الانتظار",
+                        Colors.white38,
+                        status,
+                        orders[i].id,
+                      ),
+                      const SizedBox(width: 8),
+                      _statusButton(
+                        "جاري التجهيز",
+                        Colors.orangeAccent,
+                        status,
+                        orders[i].id,
+                      ),
+                      const SizedBox(width: 8),
+                      _statusButton(
+                        "جاهز",
+                        Colors.greenAccent,
+                        status,
+                        orders[i].id,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -2122,248 +2245,39 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
     );
   }
 
-  Widget _buildPOSView() {
-    return Row(
-      children: [
-        Container(
-          width: 130,
-          color: Colors.white.withOpacity(0.02),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(15),
-                color: CafeTheme.primaryGold,
-                width: double.infinity,
-                child: const Text(
-                  "الأقسام",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('categories')
-                      .orderBy('index')
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const SizedBox();
-                    var cats = snapshot.data!.docs;
-
-                    if (selectedCategory == null && cats.isNotEmpty) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          setState(() {
-                            selectedCategory = cats.first['name'];
-                          });
-                        }
-                      });
-                    }
-
-                    return ListView.builder(
-                      itemCount: cats.length,
-                      itemBuilder: (c, i) {
-                        String catName = cats[i]['name'];
-                        bool isSelected = selectedCategory == catName;
-                        return InkWell(
-                          onTap: () =>
-                              setState(() => selectedCategory = catName),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 20,
-                              horizontal: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Colors.white.withOpacity(0.1)
-                                  : Colors.transparent,
-                              border: isSelected
-                                  ? const Border(
-                                      right: BorderSide(
-                                        color: CafeTheme.primaryGold,
-                                        width: 4,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            child: Text(
-                              catName,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? CafeTheme.primaryGold
-                                    : Colors.white70,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
+  Widget _statusButton(
+      String label, Color color, String currentStatus, String docId) {
+    bool isSelected = currentStatus == label;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () async {
+          await FirebaseFirestore.instance
+              .collection('orders')
+              .doc(docId)
+              .update({'status': label});
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? color.withOpacity(0.2)
+                : Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? color : Colors.white10,
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? color : Colors.white38,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-        Expanded(
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                color: Colors.white.withOpacity(0.05),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: tableCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: "طاولة",
-                              isDense: true,
-                              filled: true,
-                              fillColor: Colors.black,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextField(
-                            controller: nameCtrl,
-                            decoration: const InputDecoration(
-                              labelText: "اسم العميل",
-                              isDense: true,
-                              filled: true,
-                              fillColor: Colors.black,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: searchCtrl,
-                      onChanged: (val) => setState(() => searchQuery = val),
-                      decoration: InputDecoration(
-                        hintText: "بحث عن صنف (في كل الأقسام)...",
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: CafeTheme.primaryGold,
-                        ),
-                        filled: true,
-                        fillColor: Colors.black,
-                        isDense: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('products')
-                      .snapshots(),
-                  builder: (context, snap) {
-                    if (!snap.hasData) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-
-                    var items = snap.data!.docs
-                        .map((d) => d.data() as Map<String, dynamic>)
-                        .toList();
-
-                    if (searchQuery.isNotEmpty) {
-                      items = items
-                          .where(
-                            (i) => i['name'].toString().contains(searchQuery),
-                          )
-                          .toList();
-                    } else if (selectedCategory != null) {
-                      items = items
-                          .where((i) => i['cat'] == selectedCategory)
-                          .toList();
-                    }
-
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(10),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 1.2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                      ),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        var prod = items[index];
-                        bool hasSizes = prod['sizes'] != null &&
-                            (prod['sizes'] as List).isNotEmpty;
-
-                        return InkWell(
-                          onTap: () => _showWaiterAddDialog(prod),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: CafeTheme.surface,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.white10),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4.0,
-                                  ),
-                                  child: Text(
-                                    prod['name'],
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  hasSizes
-                                      ? "أحجام مختلفة"
-                                      : "${prod['price']} ج.م",
-                                  style: TextStyle(
-                                    color: hasSizes
-                                        ? Colors.orangeAccent
-                                        : CafeTheme.primaryGold,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: hasSizes ? 11 : 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              if (waiterBasket.isNotEmpty) _buildBasketSummary(),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -2430,10 +2344,8 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                 var item = waiterBasket[index];
                 return Container(
                   margin: const EdgeInsets.symmetric(vertical: 5),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 10,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(10),
