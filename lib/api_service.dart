@@ -12,7 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 // ← غيّر ده بالـ URL بتاع Vercel بعد الـ deploy
-const String _baseUrl = 'https://YOUR_LAVEORA_BACKEND.vercel.app';
+const String _baseUrl = 'https://onesignal-server-naders-projects-748217a7.vercel.app';
 
 class ApiException implements Exception {
   final int statusCode;
