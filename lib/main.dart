@@ -7,25 +7,7 @@ import 'dart:js' as js;
 import 'dart:html' as html;
 
 import 'firebase_options.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
-Future<void> sendTelegramMessage(String message) async {
-  try {
-    var url = Uri.parse(
-      "https://onesignal-server-nine.vercel.app/api/telegram",
-    );
-    var response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"message": message}),
-    );
-    print("Telegram Status: ${response.statusCode}");
-    print("Telegram Response: ${response.body}");
-  } catch (e) {
-    print("Telegram Error: $e");
-  }
-}
+import 'api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -157,120 +139,127 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       builder: (context) {
-        return StatefulBuilder(builder: (context, setSheetState) {
-          List<QueryDocumentSnapshot> filteredCats = cats;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            List<QueryDocumentSnapshot> filteredCats = cats;
 
-          String q = _catSearchCtrl.text.trim();
-          if (q.isNotEmpty) {
-            filteredCats = cats.where((doc) {
-              String name = (doc['name'] ?? "").toString();
-              return name.contains(q);
-            }).toList();
-          }
+            String q = _catSearchCtrl.text.trim();
+            if (q.isNotEmpty) {
+              filteredCats = cats.where((doc) {
+                String name = (doc['name'] ?? "").toString();
+                return name.contains(q);
+              }).toList();
+            }
 
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-              left: 15,
-              right: 15,
-              top: 15,
-            ),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.75,
-              child: Column(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  const Text(
-                    "اختر القسم",
-                    style: TextStyle(
-                      color: CafeTheme.primaryGold,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  TextField(
-                    controller: _catSearchCtrl,
-                    onChanged: (_) => setSheetState(() {}),
-                    decoration: InputDecoration(
-                      hintText: "ابحث عن قسم...",
-                      hintStyle: const TextStyle(color: Colors.white38),
-                      prefixIcon: const Icon(Icons.search,
-                          color: CafeTheme.primaryGold),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 15,
+                right: 15,
+                top: 15,
+              ),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.75,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 15),
-                  Expanded(
-                    child: GridView.builder(
-                      itemCount: filteredCats.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 2.8,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
+                    const SizedBox(height: 15),
+                    const Text(
+                      "اختر القسم",
+                      style: TextStyle(
+                        color: CafeTheme.primaryGold,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
                       ),
-                      itemBuilder: (context, i) {
-                        String catName =
-                            (filteredCats[i]['name'] ?? "").toString();
-                        bool selected = currentCat == catName;
+                    ),
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: _catSearchCtrl,
+                      onChanged: (_) => setSheetState(() {}),
+                      decoration: InputDecoration(
+                        hintText: "ابحث عن قسم...",
+                        hintStyle: const TextStyle(color: Colors.white38),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: CafeTheme.primaryGold,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.05),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Expanded(
+                      child: GridView.builder(
+                        itemCount: filteredCats.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 2.8,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemBuilder: (context, i) {
+                          String catName =
+                              (filteredCats[i]['name'] ?? "").toString();
+                          bool selected = currentCat == catName;
 
-                        return InkWell(
-                          borderRadius: BorderRadius.circular(18),
-                          onTap: () {
-                            setState(() => currentCat = catName);
-                            Navigator.pop(context);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? CafeTheme.primaryGold
-                                  : Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: () {
+                              setState(() => currentCat = catName);
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
                                 color: selected
                                     ? CafeTheme.primaryGold
-                                    : Colors.white10,
+                                    : Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: selected
+                                      ? CafeTheme.primaryGold
+                                      : Colors.white10,
+                                ),
                               ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                catName,
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: selected ? Colors.black : Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                              child: Center(
+                                child: Text(
+                                  catName,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color:
+                                        selected ? Colors.black : Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
@@ -405,17 +394,30 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(height: 25),
-              _devLink(Icons.chat_bubble_outline, "WhatsApp", Colors.green,
-                  "https://wa.me/qr/QS4SMJ54AKJMF1"),
-              _devLink(Icons.facebook_outlined, "Facebook", Colors.blueAccent,
-                  "https://www.facebook.com/share/1ByWx21qNW/"),
               _devLink(
-                  Icons.camera_alt_outlined,
-                  "Instagram",
-                  Colors.pinkAccent,
-                  "https://www.instagram.com/nadersoltan294?igsh=bDB5eTB3Z2NrMmF6"),
-              _devLink(Icons.video_collection_outlined, "TikTok", Colors.white,
-                  "https://www.tiktok.com/@nadersoltan6?_r=1&_t=ZS-93Uf8vOauIB"),
+                Icons.chat_bubble_outline,
+                "WhatsApp",
+                Colors.green,
+                "https://wa.me/qr/QS4SMJ54AKJMF1",
+              ),
+              _devLink(
+                Icons.facebook_outlined,
+                "Facebook",
+                Colors.blueAccent,
+                "https://www.facebook.com/share/1ByWx21qNW/",
+              ),
+              _devLink(
+                Icons.camera_alt_outlined,
+                "Instagram",
+                Colors.pinkAccent,
+                "https://www.instagram.com/nadersoltan294?igsh=bDB5eTB3Z2NrMmF6",
+              ),
+              _devLink(
+                Icons.video_collection_outlined,
+                "TikTok",
+                Colors.white,
+                "https://www.tiktok.com/@nadersoltan6?_r=1&_t=ZS-93Uf8vOauIB",
+              ),
               const Divider(color: Colors.white10, height: 30),
               const Text(
                 "Call: 01012078944",
@@ -478,8 +480,10 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
             style: ElevatedButton.styleFrom(
               backgroundColor: CafeTheme.primaryGold,
             ),
-            onPressed: () {
-              if (passwordCtrl.text == "1234") {
+            onPressed: () async {
+              final ok = await apiService.loginWaiter(passwordCtrl.text);
+              if (!context.mounted) return;
+              if (ok) {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
@@ -603,8 +607,11 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                   // زرار تسجيل الدخول كويتر
                   TextButton.icon(
                     onPressed: _showWaiterLogin,
-                    icon: const Icon(Icons.lock_person,
-                        color: CafeTheme.primaryGold, size: 18),
+                    icon: const Icon(
+                      Icons.lock_person,
+                      color: CafeTheme.primaryGold,
+                      size: 18,
+                    ),
                     label: const Text(
                       "الدخول كويتر",
                       style: TextStyle(
@@ -760,8 +767,11 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.code_rounded,
-                      color: CafeTheme.primaryGold, size: 20),
+                  Icon(
+                    Icons.code_rounded,
+                    color: CafeTheme.primaryGold,
+                    size: 20,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     "تواصل مع المطور",
@@ -888,8 +898,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                 setState(() => currentTable = _tableEntryController.text);
                 Navigator.pop(context);
                 _showStatusSnackBar(
-                    "تم تغيير الطاولة إلى ${_tableEntryController.text} 🪑",
-                    CafeTheme.primaryGold);
+                  "تم تغيير الطاولة إلى ${_tableEntryController.text} 🪑",
+                  CafeTheme.primaryGold,
+                );
               }
             },
             child: const Text(
@@ -918,8 +929,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
               color: Colors.black.withOpacity(0.6),
               borderRadius: BorderRadius.circular(25),
               border: Border.all(
-                color: CafeTheme.primaryGold
-                    .withOpacity(0.4 + (0.6 * _glowController.value)),
+                color: CafeTheme.primaryGold.withOpacity(
+                  0.4 + (0.6 * _glowController.value),
+                ),
                 width: 2,
               ),
             ),
@@ -994,8 +1006,10 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                                       : null,
                               backgroundColor: Colors.white10,
                               child: (imgUrl == null || imgUrl.isEmpty)
-                                  ? const Icon(Icons.restaurant,
-                                      color: CafeTheme.primaryGold)
+                                  ? const Icon(
+                                      Icons.restaurant,
+                                      color: CafeTheme.primaryGold,
+                                    )
                                   : null,
                             ),
                             const SizedBox(height: 8),
@@ -1053,7 +1067,9 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                           borderRadius: BorderRadius.circular(25),
                         ),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 12),
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
                       ),
                       onPressed: () => _showCategoriesSheet(cats),
                       icon: const Icon(Icons.grid_view_rounded, size: 18),
@@ -1088,7 +1104,7 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                                   ? const LinearGradient(
                                       colors: [
                                         Color(0xFFD4AF37),
-                                        Color(0xFFB8860B)
+                                        Color(0xFFB8860B),
                                       ],
                                     )
                                   : null,
@@ -1167,8 +1183,10 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                           width: 60,
                           height: 60,
                           color: Colors.white10,
-                          child: const Icon(Icons.fastfood,
-                              color: CafeTheme.primaryGold),
+                          child: const Icon(
+                            Icons.fastfood,
+                            color: CafeTheme.primaryGold,
+                          ),
                         ),
                 ),
                 title: Text(
@@ -1218,123 +1236,129 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder(builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: const Color(0xFF151515),
-            title: Text(
-              "تخصيص ${item['name']}",
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: CafeTheme.primaryGold),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (sizes != null && sizes.isNotEmpty) ...[
-                  const Text(
-                    "اختر الحجم:",
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF151515),
+              title: Text(
+                "تخصيص ${item['name']}",
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: CafeTheme.primaryGold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (sizes != null && sizes.isNotEmpty) ...[
+                    const Text(
+                      "اختر الحجم:",
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.end,
+                      children: sizes.map((s) {
+                        bool isSelected = selectedSize == s;
+                        return ChoiceChip(
+                          label: Text("${s['name']} - ${s['price']} ج.م"),
+                          selected: isSelected,
+                          selectedColor: CafeTheme.primaryGold,
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.black : Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          onSelected: (bool selected) {
+                            if (selected) {
+                              setDialogState(() {
+                                selectedSize = s;
+                                currentPrice = (s['price'] as num).toDouble();
+                              });
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  TextField(
+                    controller: _noteController,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
-                        color: Colors.white70, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      hintText: "أي إضافات تحب نجهزها لك؟",
+                      hintStyle: const TextStyle(
+                        color: Colors.white24,
+                        fontSize: 13,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.05),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.end,
-                    children: sizes.map((s) {
-                      bool isSelected = selectedSize == s;
-                      return ChoiceChip(
-                        label: Text("${s['name']} - ${s['price']} ج.م"),
-                        selected: isSelected,
-                        selectedColor: CafeTheme.primaryGold,
-                        backgroundColor: Colors.white.withOpacity(0.05),
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        onSelected: (bool selected) {
-                          if (selected) {
-                            setDialogState(() {
-                              selectedSize = s;
-                              currentPrice = (s['price'] as num).toDouble();
-                            });
-                          }
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
                 ],
-                TextField(
-                  controller: _noteController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    hintText: "أي إضافات تحب نجهزها لك؟",
-                    hintStyle:
-                        const TextStyle(color: Colors.white24, fontSize: 13),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("إلغاء"),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: CafeTheme.primaryGold,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      String userNote = _noteController.text.isEmpty
+                          ? "بدون إضافات"
+                          : _noteController.text;
+
+                      String itemName = item['name'];
+                      if (selectedSize != null) {
+                        itemName += " (${selectedSize!['name']})";
+                      }
+
+                      int index = basket.indexWhere(
+                        (e) =>
+                            e['name'] == itemName &&
+                            e['note'] == userNote &&
+                            e['price'] == currentPrice,
+                      );
+
+                      if (index != -1) {
+                        basket[index]['quantity']++;
+                      } else {
+                        basket.add({
+                          'name': itemName,
+                          'price': currentPrice,
+                          'image_url': item['image_url'],
+                          'note': userNote,
+                          'quantity': 1,
+                        });
+                      }
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    "إضافة",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("إلغاء"),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: CafeTheme.primaryGold,
-                ),
-                onPressed: () {
-                  setState(() {
-                    String userNote = _noteController.text.isEmpty
-                        ? "بدون إضافات"
-                        : _noteController.text;
-
-                    String itemName = item['name'];
-                    if (selectedSize != null) {
-                      itemName += " (${selectedSize!['name']})";
-                    }
-
-                    int index = basket.indexWhere(
-                      (e) =>
-                          e['name'] == itemName &&
-                          e['note'] == userNote &&
-                          e['price'] == currentPrice,
-                    );
-
-                    if (index != -1) {
-                      basket[index]['quantity']++;
-                    } else {
-                      basket.add({
-                        'name': itemName,
-                        'price': currentPrice,
-                        'image_url': item['image_url'],
-                        'note': userNote,
-                        'quantity': 1,
-                      });
-                    }
-                  });
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  "إضافة",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
@@ -1564,8 +1588,10 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: CafeTheme.primaryGold,
                   foregroundColor: Colors.black,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 18,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -1582,8 +1608,11 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
                     setState(() => basket.clear());
                     _showStatusSnackBar("تم مسح السلة", Colors.redAccent);
                   },
-                  icon: const Icon(Icons.delete_outline,
-                      color: Colors.redAccent, size: 16),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.redAccent,
+                    size: 16,
+                  ),
                   label: const Text(
                     "مسح السلة",
                     style: TextStyle(color: Colors.redAccent, fontSize: 12),
@@ -1618,10 +1647,35 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
       'status': 'قيد الانتظار',
     };
 
-    await FirebaseFirestore.instance.collection('orders').add(orderData);
+    await apiService.createOrder(
+      customerName: registeredName!,
+      tableNumber: currentTable ?? '?',
+      itemsWithQty:
+          basket.map((e) => {'name': e['name'], 'qty': e['quantity']}).toList(),
+      totalPrice: basket.fold(
+        0.0,
+        (prev, item) =>
+            prev + ((item['price'] as num) * (item['quantity'] as num)),
+      ),
+      note: basket.any((e) => e['note'] != "بدون إضافات")
+          ? basket.firstWhere((e) => e['note'] != "بدون إضافات")['note']
+          : "بدون إضافات",
+    );
 
-    await sendTelegramMessage(
-        "🚀 طلب جديد من $registeredName - طاولة $currentTable");
+    final itemLines =
+        basket.map((e) => '  • ${e['name']} × ${e['quantity']}').join('\n');
+    await apiService.sendTelegramMessage(
+      '━━━━━━━━━━━━━━━━━━\n'
+      '✨ طلب جديد — LAVEORA\n'
+      '━━━━━━━━━━━━━━━━━━\n'
+      '👤 العميل : $registeredName\n'
+      '🪑 الطاولة : $currentTable\n'
+      '━━━━━━━━━━━━━━━━━━\n'
+      '🛒 الطلبات :\n$itemLines\n'
+      '━━━━━━━━━━━━━━━━━━\n'
+      '💰 الإجمالي : ${basket.fold(0.0, (p, e) => p + ((e['price'] as num) * (e['quantity'] as num))).toStringAsFixed(2)} ج.م\n'
+      '━━━━━━━━━━━━━━━━━━',
+    );
 
     setState(() {
       basket.clear();
@@ -1632,13 +1686,19 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   void _callWaiter() async {
     if (_isWaiterAlertActive || registeredName == null) return;
     setState(() => _isWaiterAlertActive = true);
-    await FirebaseFirestore.instance.collection('alerts').add({
-      'customer_name': registeredName,
-      'table_number': currentTable,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-    await sendTelegramMessage(
-        "🔔 نداء ويتر من طاولة $currentTable - العميل: $registeredName");
+    await apiService.callWaiter(
+      customerName: registeredName!,
+      tableNumber: currentTable ?? '?',
+    );
+    await apiService.sendTelegramMessage(
+      '━━━━━━━━━━━━━━━━━━\n'
+      '🔔 نداء ويتر — LAVEORA\n'
+      '━━━━━━━━━━━━━━━━━━\n'
+      '👤 العميل : $registeredName\n'
+      '🪑 الطاولة : $currentTable\n'
+      '━━━━━━━━━━━━━━━━━━\n'
+      '⚡ العميل يطلب مساعدة الويتر!',
+    );
   }
 }
 
@@ -1741,121 +1801,128 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder(builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: const Color(0xFF151515),
-            title: Text(
-              "إضافة ${item['name']}",
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: CafeTheme.primaryGold),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (sizes != null && sizes.isNotEmpty) ...[
-                  const Text(
-                    "اختر الحجم:",
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF151515),
+              title: Text(
+                "إضافة ${item['name']}",
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: CafeTheme.primaryGold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (sizes != null && sizes.isNotEmpty) ...[
+                    const Text(
+                      "اختر الحجم:",
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.end,
+                      children: sizes.map((s) {
+                        bool isSelected = selectedSize == s;
+                        return ChoiceChip(
+                          label: Text("${s['name']} - ${s['price']} ج.م"),
+                          selected: isSelected,
+                          selectedColor: CafeTheme.primaryGold,
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.black : Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          onSelected: (bool selected) {
+                            if (selected) {
+                              setDialogState(() {
+                                selectedSize = s;
+                                currentPrice = (s['price'] as num).toDouble();
+                              });
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  TextField(
+                    controller: noteCtrl,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
-                        color: Colors.white70, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      hintText: "ملاحظات (سكر زيادة، بدون ثلج...)",
+                      hintStyle: const TextStyle(
+                        color: Colors.white24,
+                        fontSize: 13,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.05),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.end,
-                    children: sizes.map((s) {
-                      bool isSelected = selectedSize == s;
-                      return ChoiceChip(
-                        label: Text("${s['name']} - ${s['price']} ج.م"),
-                        selected: isSelected,
-                        selectedColor: CafeTheme.primaryGold,
-                        backgroundColor: Colors.white.withOpacity(0.05),
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        onSelected: (bool selected) {
-                          if (selected) {
-                            setDialogState(() {
-                              selectedSize = s;
-                              currentPrice = (s['price'] as num).toDouble();
-                            });
-                          }
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
                 ],
-                TextField(
-                  controller: noteCtrl,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    hintText: "ملاحظات (سكر زيادة، بدون ثلج...)",
-                    hintStyle:
-                        const TextStyle(color: Colors.white24, fontSize: 13),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("إلغاء"),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: CafeTheme.primaryGold,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      String note = noteCtrl.text.isEmpty
+                          ? "بدون ملاحظات"
+                          : noteCtrl.text;
+
+                      String itemName = item['name'];
+                      if (selectedSize != null) {
+                        itemName += " (${selectedSize!['name']})";
+                      }
+
+                      int idx = waiterBasket.indexWhere(
+                        (e) =>
+                            e['name'] == itemName &&
+                            e['note'] == note &&
+                            e['price'] == currentPrice,
+                      );
+
+                      if (idx != -1) {
+                        waiterBasket[idx]['qty']++;
+                      } else {
+                        waiterBasket.add({
+                          'name': itemName,
+                          'price': currentPrice,
+                          'qty': 1,
+                          'note': note,
+                        });
+                      }
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    "إضافة للسلة",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("إلغاء"),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: CafeTheme.primaryGold,
-                ),
-                onPressed: () {
-                  setState(() {
-                    String note =
-                        noteCtrl.text.isEmpty ? "بدون ملاحظات" : noteCtrl.text;
-
-                    String itemName = item['name'];
-                    if (selectedSize != null) {
-                      itemName += " (${selectedSize!['name']})";
-                    }
-
-                    int idx = waiterBasket.indexWhere(
-                      (e) =>
-                          e['name'] == itemName &&
-                          e['note'] == note &&
-                          e['price'] == currentPrice,
-                    );
-
-                    if (idx != -1) {
-                      waiterBasket[idx]['qty']++;
-                    } else {
-                      waiterBasket.add({
-                        'name': itemName,
-                        'price': currentPrice,
-                        'qty': 1,
-                        'note': note,
-                      });
-                    }
-                  });
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  "إضافة للسلة",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
@@ -1883,22 +1950,33 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
         notesList.isEmpty ? "بدون ملاحظات" : notesList.join(" | ");
     String customerName = nameCtrl.text.isEmpty ? "عميل" : nameCtrl.text;
 
-    await FirebaseFirestore.instance.collection('orders').add({
-      'customer_name': customerName,
-      'order_type': 'داخل المكان',
-      'table_number': tableCtrl.text,
-      'items_with_qty': waiterBasket
+    await apiService.createOrder(
+      customerName: customerName,
+      tableNumber: tableCtrl.text,
+      itemsWithQty: waiterBasket
           .map((e) => {'name': e['name'], 'qty': e['qty']})
           .toList(),
-      'note': notesStr,
-      'total_price': total,
-      'timestamp': FieldValue.serverTimestamp(),
-      'status': 'قيد الانتظار',
-      'source': 'waiter',
-    });
+      totalPrice: total,
+      note: notesStr,
+      orderType: 'داخل المكان',
+      source: 'waiter',
+    );
 
-    await sendTelegramMessage(
-        "🤵 ويتر أضاف طلب - طاولة ${tableCtrl.text} - $customerName");
+    final itemLines =
+        waiterBasket.map((e) => '  • ${e['name']} × ${e['qty']}').join('\n');
+    await apiService.sendTelegramMessage(
+      '━━━━━━━━━━━━━━━━━━\n'
+      '🤵 طلب ويتر — LAVEORA\n'
+      '━━━━━━━━━━━━━━━━━━\n'
+      '👤 العميل : $customerName\n'
+      '🪑 الطاولة : ${tableCtrl.text}\n'
+      '━━━━━━━━━━━━━━━━━━\n'
+      '🛒 الطلبات :\n$itemLines\n'
+      '━━━━━━━━━━━━━━━━━━\n'
+      '📝 ملاحظة : $notesStr\n'
+      '💰 الإجمالي : ${total.toStringAsFixed(2)} ج.م\n'
+      '━━━━━━━━━━━━━━━━━━',
+    );
 
     setState(() => waiterBasket.clear());
     _showSnack("تم الإرسال للباريستا ✅", Colors.green);
@@ -1907,9 +1985,13 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold, color: Colors.black)),
+        content: Text(
+          msg,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(20),
@@ -1933,8 +2015,10 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                   decoration: InputDecoration(
                     hintText: "رقم الطاولة",
                     hintStyle: const TextStyle(color: Colors.white38),
-                    prefixIcon: const Icon(Icons.table_restaurant,
-                        color: CafeTheme.primaryGold),
+                    prefixIcon: const Icon(
+                      Icons.table_restaurant,
+                      color: CafeTheme.primaryGold,
+                    ),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.05),
                     border: OutlineInputBorder(
@@ -1952,8 +2036,10 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                   decoration: InputDecoration(
                     hintText: "اسم العميل",
                     hintStyle: const TextStyle(color: Colors.white38),
-                    prefixIcon:
-                        const Icon(Icons.person, color: CafeTheme.primaryGold),
+                    prefixIcon: const Icon(
+                      Icons.person,
+                      color: CafeTheme.primaryGold,
+                    ),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.05),
                     border: OutlineInputBorder(
@@ -1978,8 +2064,10 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                   decoration: InputDecoration(
                     hintText: "ابحث عن منتج...",
                     hintStyle: const TextStyle(color: Colors.white38),
-                    prefixIcon:
-                        const Icon(Icons.search, color: CafeTheme.primaryGold),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: CafeTheme.primaryGold,
+                    ),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.05),
                     border: OutlineInputBorder(
@@ -2015,7 +2103,9 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 6),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 8),
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? CafeTheme.primaryGold
@@ -2047,8 +2137,9 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const Center(
-                  child:
-                      CircularProgressIndicator(color: CafeTheme.primaryGold),
+                  child: CircularProgressIndicator(
+                    color: CafeTheme.primaryGold,
+                  ),
                 );
               }
               var prods = snapshot.data!.docs.where((doc) {
@@ -2086,15 +2177,23 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: (imgUrl != null && imgUrl.isNotEmpty)
-                                ? Image.network(imgUrl,
-                                    width: 55, height: 55, fit: BoxFit.cover)
-                                : const Icon(Icons.fastfood,
-                                    color: CafeTheme.primaryGold, size: 40),
+                                ? Image.network(
+                                    imgUrl,
+                                    width: 55,
+                                    height: 55,
+                                    fit: BoxFit.cover,
+                                  )
+                                : const Icon(
+                                    Icons.fastfood,
+                                    color: CafeTheme.primaryGold,
+                                    size: 40,
+                                  ),
                           ),
                           const SizedBox(height: 6),
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 4.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4.0,
+                            ),
                             child: Text(
                               prod['name'],
                               textAlign: TextAlign.center,
@@ -2141,7 +2240,8 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(
-              child: CircularProgressIndicator(color: CafeTheme.primaryGold));
+            child: CircularProgressIndicator(color: CafeTheme.primaryGold),
+          );
         }
         var orders = snapshot.data!.docs;
         if (orders.isEmpty) {
@@ -2188,7 +2288,9 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 5),
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: sColor.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(20),
@@ -2246,7 +2348,11 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
   }
 
   Widget _statusButton(
-      String label, Color color, String currentStatus, String docId) {
+    String label,
+    Color color,
+    String currentStatus,
+    String docId,
+  ) {
     bool isSelected = currentStatus == label;
     return Expanded(
       child: GestureDetector(
@@ -2263,9 +2369,7 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                 ? color.withOpacity(0.2)
                 : Colors.white.withOpacity(0.03),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? color : Colors.white10,
-            ),
+            border: Border.all(color: isSelected ? color : Colors.white10),
           ),
           child: Text(
             label,
@@ -2344,8 +2448,10 @@ class _WaiterTerminalState extends State<WaiterTerminal> {
                 var item = waiterBasket[index];
                 return Container(
                   margin: const EdgeInsets.symmetric(vertical: 5),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 5,
+                    horizontal: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(10),
