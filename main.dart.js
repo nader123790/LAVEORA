@@ -92761,7 +92761,7 @@ Bi(a){return this.arS(a)},
 arS(a){var s=0,r=A.P(t.y),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f
 var $async$Bi=A.Q(function(b,c){if(b===1){o.push(c)
 s=p}for(;;)switch(s){case 0:p=4
-j=A.fO("https://YOUR_LAVEORA_BACKEND.vercel.app/api/auth/waiter")
+j=A.fO("https://onesignal-server-naders-projects-748217a7.vercel.app/api/auth/waiter")
 i=t.N
 h=A.al(["Content-Type","application/json"],i,i)
 s=7
@@ -92794,7 +92794,7 @@ anP(a,b,c,d,e){return this.uX(a,b,c,"\u062f\u0627\u062e\u0644 \u0627\u0644\u0645
 anQ(a,b,c,d,e,a0,a1){var s=0,r=A.P(t.T),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f
 var $async$uX=A.Q(function(a2,a3){if(a2===1){o.push(a3)
 s=p}for(;;)switch(s){case 0:p=4
-j=A.fO("https://YOUR_LAVEORA_BACKEND.vercel.app/api/orders")
+j=A.fO("https://onesignal-server-naders-projects-748217a7.vercel.app/api/orders")
 i=t.N
 h=A.al(["Content-Type","application/json"],i,i)
 s=7
@@ -92826,7 +92826,7 @@ zG(a,b){return this.amc(a,b)},
 amc(a,b){var s=0,r=A.P(t.H),q=1,p=[],o=this,n,m,l,k,j,i,h
 var $async$zG=A.Q(function(c,d){if(c===1){p.push(d)
 s=q}for(;;)switch(s){case 0:q=3
-l=A.fO("https://YOUR_LAVEORA_BACKEND.vercel.app/api/orders/alerts")
+l=A.fO("https://onesignal-server-naders-projects-748217a7.vercel.app/api/orders/alerts")
 k=t.N
 j=A.al(["Content-Type","application/json"],k,k)
 s=6
@@ -92851,7 +92851,7 @@ pu(a){return this.a0o(a)},
 a0o(a){var s=0,r=A.P(t.H),q=1,p=[],o=this,n,m,l,k,j,i,h
 var $async$pu=A.Q(function(b,c){if(b===1){p.push(c)
 s=q}for(;;)switch(s){case 0:q=3
-l=A.fO("https://YOUR_LAVEORA_BACKEND.vercel.app/api/telegram")
+l=A.fO("https://onesignal-server-naders-projects-748217a7.vercel.app/api/telegram")
 k=t.N
 j=A.al(["Content-Type","application/json"],k,k)
 s=6
